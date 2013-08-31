@@ -23,40 +23,192 @@
 #include "ObjectMgr.h"
 #include "World.h"
 
+void WorldSession::HandleLfgProposalResponse(WorldPacket& recv_data)
+{
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_PROPOSAL RECEIVED");
+    recv_data.hexlike();    
+}
+
+void WorldSession::HandleLfgSetRoles(WorldPacket& recv_data)
+{
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_SET_ROLES RECEIVED");
+    recv_data.hexlike();
+    uint8 rolesFlags;
+    recv_data >> rolesFlags;
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Roles: %d", rolesFlags);
+}
+
+void WorldSession::HandleLfgSetNeeds(WorldPacket& recv_data)
+{
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_SET_NEEDS RECEIVED");
+    recv_data.hexlike();    
+}
+
+void WorldSession::HandleLfgBootPlayerVote(WorldPacket& recv_data)
+{
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_BOOT_PLAYER_VOTE RECEIVED");
+    recv_data.hexlike();   
+}
+
+void WorldSession::HandleLfgBootPlayer(WorldPacket& recv_data)
+{
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_BOOT_PLAYER RECEIVED");
+    recv_data.hexlike();
+}
+
+void WorldSession::HandleLfgTeleport(WorldPacket& recv_data)
+{
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_TELEPORT RECEIVED");
+    recv_data.hexlike();
+}
+
+void WorldSession::HandleLfgGetStatus(WorldPacket& recv_data)
+{
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_GET_STATUS RECEIVED, HEXT DATA:");
+    recv_data.hexlike();
+}
+
+void WorldSession::HandleLfgGetPlayerInfo(WorldPacket& recv_data)
+{
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_GET_PLAYER_INFO RECEIVED, HEX DATA:");
+    recv_data.hexlike();
+
+    int numDungeons = 0;
+    
+    for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
+    {
+        const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
+        if (dungeon)
+            ++numDungeons;
+    }
+    
+    WorldPacket packet(SMSG_LFG_PLAYER_INFO, numDungeons * 36 + 1 + 4 + 0);//(numDungeons / 2) * 4);
+    
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Sending %d instances with rewards", numDungeons);
+    packet << uint8(numDungeons);
+    for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
+    {
+        const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
+        if (!dungeon)
+            continue;
+        packet << uint32(dungeon->Entry());
+        packet << uint8(0); //doneToday
+        packet << uint32(10000);
+        packet << uint32(100000);
+        packet << uint32(30000);
+        packet << uint32(2000);
+        packet << uint8(1); //1 reward item coming
+        packet << uint32(54583); //itemId - Cloak of Burning Dusk
+        packet << uint32(0); //unk?
+        packet << uint32(1); //one of that item we will get
+    }
+    
+    packet << uint32(0);
+    // packet << uint32(numDungeons/2);
+    // for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
+    // {
+    //     const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
+    //     if (!dungeon || i % 2 == 0)
+    //         continue;
+    //     packet << uint32(dungeon->Entry());
+    //     packet << uint32(4 % i);
+    // }
+    
+    SendPacket(&packet);
+}
+
+void WorldSession::HandleLfgGetPartyInfo(WorldPacket& recv_data)
+{
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_GET_PARTY_INFO RECEIVED");
+    recv_data.hexlike();
+    
+    WorldPacket packet(SMSG_LFG_PARTY_INFO, 13);
+    packet << uint8(0);
+    // packet << uint8(1); // ourselves as a player are coming
+    // packet << GetPlayer()->GetObjectGuid();
+    // packet << uint32(0); //no locked dungeons
+
+    SendPacket(&packet);
+}
+
 void WorldSession::HandleLfgJoinOpcode(WorldPacket& recv_data)
 {
-    DEBUG_LOG("CMSG_LFG_JOIN");
-
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_JOIN, data hexlike:");
+    recv_data.hexlike();
+    
     uint8 dungeonsCount, counter2;
+    uint32 rolesFlags;
     std::string comment;
     std::vector<uint32> dungeons;
-
-    recv_data >> Unused<uint32>();                          // lfg roles
+    
+    recv_data >> rolesFlags;                                // roles, except leader
     recv_data >> Unused<uint8>();                           // lua: GetLFGInfoLocal
     recv_data >> Unused<uint8>();                           // lua: GetLFGInfoLocal
-
+    
     recv_data >> dungeonsCount;
-
     dungeons.resize(dungeonsCount);
-
     for (uint8 i = 0; i < dungeonsCount; ++i)
-        recv_data >> dungeons[i];                           // dungeons id/type
-
+        recv_data >> dungeons[i];                           // dungeons entry = id & (type << 24)
+    
     recv_data >> counter2;                                  // const count = 3, lua: GetLFGInfoLocal
-
     for (uint8 i = 0; i < counter2; ++i)
         recv_data >> Unused<uint8>();                       // lua: GetLFGInfoLocal
-
+    
     recv_data >> comment;                                   // lfg comment
 
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Got this data: num %d, first dungeon id: %d comment %s",
+                     dungeonsCount, dungeons[0] & 0xFFFFFF, comment.c_str());
+
+    WorldPacket response(SMSG_LFG_JOIN_RESULT);
+    response << uint32(0x0); //players info coming
+    //One or more in group not meeting requirements = 0x6
+    response << uint32(0);
+    response << uint8(0); //no players currently
+    SendPacket(&response);
+    
+    WorldPacket response2(SMSG_LFG_UPDATE_SEARCH);
+    response2 << uint8(0);
+    SendPacket(&response2);
+    
+    WorldPacket response4(SMSG_LFG_UPDATE_PLAYER);
+    response4 << uint8(0); //statusCode
+    response4 << uint8(1); //dataComing
+    response4 << uint8(1); //queued
+    response4 << uint8(0); //joined
+    response4 << uint8(0); //unk??
+    response4 << uint8(1); //numInstancesComing
+    response4 << uint32(dungeons[0]); //dungeon entry for now, perhaps should be id?
+    response4 << "abcd"; //comment
+    SendPacket(&response4);
+    
+    WorldPacket response3(SMSG_LFG_QUEUE_STATUS);
+    response3 << uint32(dungeons[0]);
+    response3 << uint32(0); //myWait
+    response3 << uint32(0); //avg wait
+    response3 << uint32(0); //tankWait
+    response3 << uint32(0); //healerWait
+    response3 << uint32(0); //dpsWait
+    response3 << uint8(1); //tankNeeds
+    response3 << uint8(1); //healNeeds
+    response3 << uint8(2); //dpsNeeds
+    response3 << uint32(0); //queuedTime
+    SendPacket(&response3);
+
+    
     // SendLfgJoinResult(ERR_LFG_OK);
     // SendLfgUpdate(false, LFG_UPDATE_JOIN, dungeons[0]);
 }
 
-void WorldSession::HandleLfgLeaveOpcode(WorldPacket& /*recv_data*/)
+void WorldSession::HandleLfgLeaveOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("CMSG_LFG_LEAVE");
-
+    recv_data.hexlike();
+    
+    // WorldPacket data(SMSG_LFG_UPDATE_PLAYER);
+    // data << uint8(7); //removed from queue
+    // data << uint8(0);
+    // SendPacket(&data);
+    
     // SendLfgUpdate(false, LFG_UPDATE_LEAVE, 0);
 }
 
@@ -76,6 +228,7 @@ void WorldSession::HandleSearchLfgJoinOpcode(WorldPacket& recv_data)
 void WorldSession::HandleSearchLfgLeaveOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("CMSG_LFG_SEARCH_LEAVE");
+    recv_data.hexlike();
 
     recv_data >> Unused<uint32>();                          // join id?
 }
@@ -83,6 +236,7 @@ void WorldSession::HandleSearchLfgLeaveOpcode(WorldPacket& recv_data)
 void WorldSession::HandleSetLfgCommentOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("CMSG_SET_LFG_COMMENT");
+    recv_data.hexlike();
 
     std::string comment;
     recv_data >> comment;
@@ -221,23 +375,23 @@ void WorldSession::SendLfgJoinResult(LfgJoinResult result)
     WorldPacket data(SMSG_LFG_JOIN_RESULT, 0);
     data << uint32(result);
     data << uint32(0); // ERR_LFG_ROLE_CHECK_FAILED_TIMEOUT = 3, ERR_LFG_ROLE_CHECK_FAILED_NOT_VIABLE = (value - 3 == result)
-
-    if (result == ERR_LFG_NO_SLOTS_PARTY)
-    {
-        uint8 count1 = 0;
-        data << uint8(count1);                              // players count?
-        for (uint32 i = 0; i < count1; ++i)
-        {
-            data << uint64(0);                              // player guid?
-            uint32 count2 = 0;
-            for (uint32 j = 0; j < count2; ++j)
-            {
-                data << uint32(0);                          // dungeon id/type
-                data << uint32(0);                          // lock status?
-            }
-        }
-    }
-
+    
+    // if (result == ERR_LFG_NO_SLOTS_PARTY)
+    // {
+    //     uint8 count1 = 0;
+    //     data << uint8(count1);                              // players count?
+    //     for (uint32 i = 0; i < count1; ++i)
+    //     {
+    //         data << uint64(0);                              // player guid?
+    //         uint32 count2 = 0;
+    //         for (uint32 j = 0; j < count2; ++j)
+    //         {
+    //             data << uint32(0);                          // dungeon id/type
+    //             data << uint32(0);                          // lock status?
+    //         }
+    //     }
+    // }
+    
     SendPacket(&data);
 }
 
@@ -245,10 +399,10 @@ void WorldSession::SendLfgUpdate(bool isGroup, LfgUpdateType updateType, uint32 
 {
     WorldPacket data(isGroup ? SMSG_LFG_UPDATE_PARTY : SMSG_LFG_UPDATE_PLAYER, 0);
     data << uint8(updateType);
-
+    
     uint8 extra = updateType == LFG_UPDATE_JOIN ? 1 : 0;
     data << uint8(extra);
-
+    
     if (extra)
     {
         data << uint8(0);
@@ -269,4 +423,49 @@ void WorldSession::SendLfgUpdate(bool isGroup, LfgUpdateType updateType, uint32 
         data << "";
     }
     SendPacket(&data);
+}
+
+void WorldSession::HandleSetDungeonDifficultyOpcode(WorldPacket& recv_data)
+{
+    DEBUG_LOG("WORLD: Received opcode MSG_SET_DUNGEON_DIFFICULTY");
+
+    uint32 mode;
+    recv_data >> mode;
+
+    if (mode >= MAX_DUNGEON_DIFFICULTY)
+    {
+        sLog.outError("WorldSession::HandleSetDungeonDifficultyOpcode: player %d sent an invalid instance mode %d!", _player->GetGUIDLow(), mode);
+        return;
+    }
+
+    if (Difficulty(mode) == _player->GetDungeonDifficulty())
+        return;
+
+    // cannot reset while in an instance
+    Map* map = _player->GetMap();
+    if (map && map->IsDungeon())
+    {
+        sLog.outError("WorldSession::HandleSetDungeonDifficultyOpcode: player %d tried to reset the instance while inside!", _player->GetGUIDLow());
+        return;
+    }
+
+    // Exception to set mode to normal for low-level players
+    if (_player->getLevel() < LEVELREQUIREMENT_HEROIC && mode > REGULAR_DIFFICULTY)
+        return;
+
+    if (Group* pGroup = _player->GetGroup())
+    {
+        if (pGroup->IsLeader(_player->GetObjectGuid()))
+        {
+            // the difficulty is set even if the instances can't be reset
+            //_player->SendDungeonDifficulty(true);
+            pGroup->ResetInstances(INSTANCE_RESET_CHANGE_DIFFICULTY, false, _player);
+            pGroup->SetDungeonDifficulty(Difficulty(mode));
+        }
+    }
+    else
+    {
+        _player->ResetInstances(INSTANCE_RESET_CHANGE_DIFFICULTY, false);
+        _player->SetDungeonDifficulty(Difficulty(mode));
+    }
 }

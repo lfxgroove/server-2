@@ -2137,6 +2137,41 @@ struct WorldSafeLocsEntry
     // 21 string flags
 };
 
+struct LFGDungeonEntry
+{
+    uint32  ID;                                             // 0
+    char*   name[16];                                       // 1-17 Name lang
+    uint32  minlevel;                                       // 18
+    uint32  maxlevel;                                       // 19
+    uint32  reclevel;                                       // 20
+    uint32  recminlevel;                                    // 21
+    uint32  recmaxlevel;                                    // 22
+    int32   map;                                            // 23
+    uint32  difficulty;                                     // 24
+    uint32  flags;                                          // 25
+    uint32  type;                                           // 26
+    //uint32  unk;                                          // 27
+    //char*   iconname;                                     // 28
+    uint32  expansion;                                      // 29
+    //uint32  unk4;                                         // 30
+    uint32  grouptype;                                      // 31
+    //char*   desc[16];                                     // 32-47 Description
+    // Helpers
+    uint32 Entry() const { return ID + (type << 24); }
+    /** 
+     * Extracts the type from a dungeon entry, see \ref DungeonEntry for more info.
+     * @param entry the entry you would like to find the type for
+     * @return the type of the dungeon
+     */
+    static uint32 TypeFromEntry(uint32 entry) const { return entry & 0xFF000000; };
+    /** 
+     * Extracts the id from a dungeon entry, see \ref DungeonEntry for more info.
+     * @param entry the entry you would like to find the id for
+     * @return the id of the dungeon
+     */
+    static uint32 IdFromEntry(uint32 entry) const { return entry & 0xFFFFFF; };
+};
+
 // GCC have alternative #pragma pack() syntax and old gcc version not support pack(pop), also any gcc version not support it at some platform
 #if defined( __GNUC__ )
 #pragma pack()

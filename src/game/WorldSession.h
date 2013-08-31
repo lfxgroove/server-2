@@ -787,12 +787,23 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleSetDungeonDifficultyOpcode(WorldPacket& recv_data);
         void HandleSetRaidDifficultyOpcode(WorldPacket& recv_data);
         void HandleMoveSetCanFlyAckOpcode(WorldPacket& recv_data);
+        
+        void HandleLfgProposalResponse(WorldPacket& recv_data);
+        void HandleLfgSetRoles(WorldPacket& recv_data);
+        void HandleLfgSetNeeds(WorldPacket& recv_data);
+        void HandleLfgBootPlayerVote(WorldPacket& recv_data);
+        void HandleLfgBootPlayer(WorldPacket& recv_data);
+        void HandleLfgTeleport(WorldPacket& recv_data);
         void HandleLfgJoinOpcode(WorldPacket& recv_data);
         void HandleLfgLeaveOpcode(WorldPacket& recv_data);
         void HandleSearchLfgJoinOpcode(WorldPacket& recv_data);
         void HandleSearchLfgLeaveOpcode(WorldPacket& recv_data);
         void HandleSetLfgCommentOpcode(WorldPacket& recv_data);
         void HandleSetTitleOpcode(WorldPacket& recv_data);
+        void HandleLfgGetPartyInfo(WorldPacket& recv_data);
+        void HandleLfgGetPlayerInfo(WorldPacket& recv_data);
+        void HandleLfgGetStatus(WorldPacket& recv_data);
+        
         void HandleRealmSplitOpcode(WorldPacket& recv_data);
         void HandleTimeSyncResp(WorldPacket& recv_data);
         void HandleWhoisOpcode(WorldPacket& recv_data);

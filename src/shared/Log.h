@@ -39,7 +39,7 @@ enum LogFilters
     LOG_FILTER_TRANSPORT_MOVES    = 0x000001,               //  0 any related to transport moves
     LOG_FILTER_CREATURE_MOVES     = 0x000002,               //  1 creature move by cells
     LOG_FILTER_VISIBILITY_CHANGES = 0x000004,               //  2 update visibility for diff objects and players
-    LOG_FILTER_ACHIEVEMENT_UPDATES = 0x000008,              //  3 achievement update broadcasts
+    LOG_FILTER_ACHIEVEMENT_UPDATES= 0x000008,               //  3 achievement update broadcasts
     LOG_FILTER_WEATHER            = 0x000010,               //  4 weather changes
     LOG_FILTER_PLAYER_STATS       = 0x000020,               //  5 player save data
     LOG_FILTER_SQL_TEXT           = 0x000040,               //  6 raw SQL text send to DB engine
@@ -56,9 +56,10 @@ enum LogFilters
     LOG_FILTER_MAP_LOADING        = 0x020000,               // 17 Map loading/unloading (MAP, VMAPS, MMAP)
     LOG_FILTER_EVENT_AI_DEV       = 0x040000,               // 18 Event AI actions
     LOG_FILTER_CALENDAR           = 0x080000,               // 19 Calendar
+    LOG_FILTER_DUNGEON            = 0x100000                // 20 Logging related to DungeonFinding functionality
 };
 
-#define LOG_FILTER_COUNT            20
+#define LOG_FILTER_COUNT            21
 
 struct LogFilterData
 {
