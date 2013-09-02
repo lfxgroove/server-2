@@ -5,6 +5,12 @@
 #include "Common.h"
 #include "Player.h"
 
+/**
+ * \addtogroup dungeonfinder
+ * @{
+ * \file
+ */
+
 namespace Dungeon
 {
     /**
@@ -32,16 +38,35 @@ namespace Dungeon
     /**
      * These are the different roles you can apply for when joining the dungeon finder
      * queue, the client makes some checks so that a mage can't join as dps etc. But this is
-     * (read will be) enforced on server side aswell.
+     * (read will be) enforced on server side aswell. This is used as a bitflag, so to queue
+     * as a possible leader/dungeon guide and tank you would use:
+     * \code{.cpp}
+     * DungeonFinderRoles tankAndLeader = ROLE_LEAD | ROLE_TANK;
+     * \endcode
      */
     enum DungeonFinderRoles
     {
+        /**
+         * Indicates that the \ref Player has some experience with this dungeon and can be
+         * the dungeon leader. */
         ROLE_LEAD = 0x1,
-        ROLE_TANK = 0x2,
-        ROLE_HEAL = 0x4,
-        ROLE_DPS  = 0x8,
+        ROLE_TANK = 0x2, ///< Indicates that the \ref Player can tank the instance
+        ROLE_HEAL = 0x4, ///< Indicates that the \ref Player can be a healer in the instance
+        ROLE_DPS  = 0x8, ///< Indicates that the \ref Player can be a damage dealer in the instance
     };
 
+    /**
+     * This decides what state a \ref Dungeon::GroupProposal has, when we've reached the last one
+     * (\ref Dungeon::GroupProposal::WAITING_FOR_CREATE) we just want to create a group and remove
+     * the \ref Dungeon::GroupProposal. See \ref Dungeon::GroupProposal for more info.
+     */
+    enum ProposalState
+    {
+        WAITING_FOR_PLAYERS, ///< We still don't have a possibility to create a full group
+        WAITING_FOR_ACCEPT, ///< We've proposed the group to all \ref Player, waiting for them to accept
+        WAITING_FOR_CREATE ///< Waiting to be created so we can remove this \ref Dungeon::GroupProposal
+    };
+    
     /**
      * A DungeonId is only the dungeon's id without any type information. See \ref DungeonEntry
      */
@@ -57,29 +82,37 @@ namespace Dungeon
      * \see LFGDungeonEntry::TypeFromEntry
      * \see LFGDungeonEntry::IdFromEntry
      */
+    typedef uint32 DungeonEntry;
+    
     struct PlayerInfo;
     struct Reward;
     class GroupProposal;
     class Dungeon;
     
-    typedef uint32 DungeonEntry;
     typedef std::list<Reward*> RewardList;
     typedef std::list<Dungeon*> DungeonList;
     typedef std::list<Player*> PlayerList;
     typedef std::vector<DungeonId> DungeonIdVector;
     typedef std::list<PlayerInfo*> PlayerInfoList;
     typedef std::list<GroupProposal*> GroupProposalList;
+    typedef std::map<Player*, DungeonList> LockedDungeonMap;
+    typedef std::map<Player*, PlayerInfo*> PlayerInfoMap;
     
+    /**
+     * Keeps information related to finding a group and what the associated \ref Player can do
+     * in terms of dps, heal or tank.
+     */
     struct PlayerInfo
     {
-        DungeonFinderRoles roles;
-        Player* pPlayer;
+        DungeonFinderRoles roles; ///< The roles that this \ref Player / \ref PlayerInfo can undertake.
+        Player* pPlayer; ///< The \ref Player that this \ref PlayerInfo is associated with
         // Group* pGroup;
-        GroupProposal* pGroupProposal;
+        GroupProposal* pGroupProposal; ///< The current proposal for this \ref PlayerInfo
+        std::string comment; ///< Can be sent by the client, doesn't seem to be used there though
         
-        DungeonIdVector canQueueFor;
-        DungeonIdVector wishToQueueFor;
-        DungeonIdVector isQueuedFor;
+        DungeonIdVector canQueueFor; ///< Dungeons that this \ref PlayerInfo can queue for
+        DungeonIdVector wishToQueueFor; ///< Dungeons that this \ref PlayerInfo wishes to queue for
+        DungeonIdVector isQueuedFor; ///< Dungeons that this \ref PlayerInfo is currently queued for
         
         bool CanTank() const { return roles & ROLE_TANK; };
         bool CanHeal() const { return roles & ROLE_HEAL; };
@@ -95,5 +128,7 @@ namespace Dungeon
         uint32 unk; ///< This isn't used yet, but will be sent, perhaps is modelId?
     };
 };
+
+/** @} */
 
 #endif

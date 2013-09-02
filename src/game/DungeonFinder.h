@@ -25,16 +25,45 @@
 #include "Dungeon.h"
 #include "DungeonGroupProposal.h"
 
+/**
+ * \addtogroup dungeonfinder
+ * @{
+ * \file
+ */
 namespace Dungeon
 {
+    /**
+     * The base class that's used for finding people a group of other people to be able to do a
+     * dungeon together. To understand the idea for this class and the classes related to this
+     * one please read a little bit about the dungeon finding system that was introduced in WotLK.
+     * 
+     * The idea with this class and the ones related to it is that the methods that have a Create
+     * somewhere in their name and give back a pointer to a object will generally take care of
+     * deallocating the memory allocated, if not it will be noted in the functions documentation.
+     */
     class Finder : public MaNGOS::Singleton<Finder>
     {
     public:
         Finder();
         virtual ~Finder();
-        
-        PlayerInfo* CreatePlayerInfo();
-        const PlayerInfo* GetPlayerInfo(Player* pPlayer) const;
+
+        /** 
+         * Creates a struct with information needed when trying to find a group, if the
+         * sent in player is null nothing is created.
+         *
+         * Do note that the given pointer is managed by \ref Dungeon::Finder and hence doesn't
+         * need to be deleted by you.
+         * @param pPlayer the player you want to associate with the newly created info
+         * @return a pointer to the object if it was successfully created, null otherwise
+         */
+        PlayerInfo* CreatePlayerInfo(Player* pPlayer);
+        /** 
+         * Get's the current \ref Dungeon::PlayerInfo for a \ref Player
+         * @param pPlayer the \ref Player we want to find the association for
+         * @return a pointer to the current \ref Dungeon::PlayerInfo associated to the \ref Player,
+         * if there's no association null is returned
+         */
+        PlayerInfo* GetPlayerInfo(Player* pPlayer);
         /** 
          * Tries to add a \ref Player to the dungeon finder queue, if it fails for some
          * reason we currently dont get to know that reason, one of them may be that they
@@ -81,11 +110,22 @@ namespace Dungeon
         PlayerInfoList m_grouped;
         GroupProposalList m_groupProposals;
         DungeonList m_allDungeons; ///< These are loaded on server start
+        /**
+         * This one is filled with data from the db when we start mangosd, after that it's continuosly
+         * updated to keep track of what instances each player has locked for some reason. And also
+         * saved back to db when it happens.
+         * \todo Add the database things for this
+         */
+        LockedDungeonMap m_lockedDungeons;
+        PlayerInfoMap m_playerInfoMap;
         
         time_t m_lastUpdate;
     };
 };
 
-#define sDungeonFinder MaNGOS::Singleton<DungeonFinder>::Instance()
+/// Convenience access to the instance of the \ref Dungeon::Finder
+#define sDungeonFinder MaNGOS::Singleton<Dungeon::Finder>::Instance()
+
+/** @} */
 
 #endif

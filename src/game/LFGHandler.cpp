@@ -1,4 +1,4 @@
-/**
+/*
  * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -23,6 +23,10 @@
 #include "ObjectMgr.h"
 #include "World.h"
 
+#include "DungeonFinder.h"
+#include "DungeonShared.h"
+#include "Dungeon.h"
+
 void WorldSession::HandleLfgProposalResponse(WorldPacket& recv_data)
 {
     DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_PROPOSAL RECEIVED");
@@ -35,7 +39,14 @@ void WorldSession::HandleLfgSetRoles(WorldPacket& recv_data)
     recv_data.hexlike();
     uint8 rolesFlags;
     recv_data >> rolesFlags;
-    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Roles: %d", rolesFlags);
+
+    Dungeon::PlayerInfo* pInfo = sDungeonFinder.GetPlayerInfo(GetPlayer());
+    if (pInfo)
+    {
+        DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Updating roles to %d for someone",
+                         rolesFlags);
+        pInfo->roles = Dungeon::DungeonFinderRoles(rolesFlags);
+    }
 }
 
 void WorldSession::HandleLfgSetNeeds(WorldPacket& recv_data)
@@ -70,11 +81,13 @@ void WorldSession::HandleLfgGetStatus(WorldPacket& recv_data)
 
 void WorldSession::HandleLfgGetPlayerInfo(WorldPacket& recv_data)
 {
+    using namespace Dungeon;
     DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_GET_PLAYER_INFO RECEIVED, HEX DATA:");
     recv_data.hexlike();
-
-    int numDungeons = 0;
     
+    // DungeonList dungeons = sDungeonFinder.GetAvailableDungeonsForPlayer(GetPlayer());
+    
+    int numDungeons = 0;
     for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
     {
         const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
@@ -89,7 +102,7 @@ void WorldSession::HandleLfgGetPlayerInfo(WorldPacket& recv_data)
     for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
     {
         const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
-        if (!dungeon)
+        if (!dungeon || i % 2 == 1)
             continue;
         packet << uint32(dungeon->Entry());
         packet << uint8(0); //doneToday
@@ -103,16 +116,16 @@ void WorldSession::HandleLfgGetPlayerInfo(WorldPacket& recv_data)
         packet << uint32(1); //one of that item we will get
     }
     
-    packet << uint32(0);
-    // packet << uint32(numDungeons/2);
-    // for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
-    // {
-    //     const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
-    //     if (!dungeon || i % 2 == 0)
-    //         continue;
-    //     packet << uint32(dungeon->Entry());
-    //     packet << uint32(4 % i);
-    // }
+    // packet << uint32(0);
+    packet << uint32(numDungeons/2);
+    for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
+    {
+        const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
+        if (!dungeon || i % 2 == 0)
+            continue;
+        packet << uint32(dungeon->Entry());
+        packet << uint32(4 % i);
+    }
     
     SendPacket(&packet);
 }
@@ -159,6 +172,26 @@ void WorldSession::HandleLfgJoinOpcode(WorldPacket& recv_data)
     DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Got this data: num %d, first dungeon id: %d comment %s",
                      dungeonsCount, dungeons[0] & 0xFFFFFF, comment.c_str());
 
+    Player* pPlayer = GetPlayer();
+    if (!pPlayer)
+    {
+        DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON,
+                         "Critical: This session doesn't have a player, this won't do!");
+        return;
+    }
+
+    //Check the group proposal here aswell, if we already have one it might need to be updated
+    Dungeon::PlayerInfo* pInfo = sDungeonFinder.GetPlayerInfo(pPlayer);
+    if (!pInfo)
+        pInfo = sDungeonFinder.CreatePlayerInfo(pPlayer);
+    pInfo->roles = Dungeon::DungeonFinderRoles(rolesFlags);
+    pInfo->comment = comment;
+    // pInfo->canQueueFor = ;
+    // pInfo->wishesToQueueFor = ;
+    // // pInfo->isQueuedFor = {};
+    
+    
+    
     WorldPacket response(SMSG_LFG_JOIN_RESULT);
     response << uint32(0x0); //players info coming
     //One or more in group not meeting requirements = 0x6

@@ -41,6 +41,13 @@ namespace Dungeon
         {
             delete *it;
         }
+
+        for (PlayerInfoMap::iterator it = m_playerInfoMap.begin();
+             it != m_playerInfoMap.end();
+             ++it)
+        {
+            delete it->second;
+        }
     }
     
     void Finder::Init()
@@ -89,19 +96,6 @@ namespace Dungeon
         sLog.outString();
         sLog.outString(">> Loaded " SIZEFMTD " dungeons and their rewards", numDungeons);
     }
-
-    // void Finder::AddToQueue(PlayerInfo* pInfo)
-    // {
-    //     if (pInfo->CanTank())
-    //         m_tankers.push_back(pInfo);
-
-    //     if (pInfo->CanHeal())
-    //         m_healers.push_back(pInfo);
-
-    //     if (pInfo->CanDps())
-    //         m_dpsers.push_back(pInfo);
-        
-    // }
     
     void Finder::Update()
     {
@@ -144,5 +138,35 @@ namespace Dungeon
         pProp->AddPlayer(pInfo);
         m_groupProposals.push_back(pProp);
         return true;
+    }
+    
+    PlayerInfo* Finder::CreatePlayerInfo(Player* pPlayer)
+    {
+        if (!pPlayer)
+            return NULL;
+        
+        PlayerInfo* pPlayerInfo = new PlayerInfo();
+        pPlayerInfo->pPlayer = pPlayer;
+        std::pair<PlayerInfoMap::iterator, bool> insertion;
+        insertion = m_playerInfoMap.insert(std::make_pair(pPlayer, pPlayerInfo));
+        if (insertion.second)
+            return pPlayerInfo;
+        else
+        {
+            delete pPlayerInfo;
+            return NULL;
+        }
+    }
+    
+    PlayerInfo* Finder::GetPlayerInfo(Player* pPlayer)
+    {
+        if (!pPlayer)
+            return NULL;
+        
+        PlayerInfoMap::iterator it = m_playerInfoMap.find(pPlayer);
+        if (it != m_playerInfoMap.end())
+            return it->second;
+        else
+            return NULL;
     }
 }

@@ -22,6 +22,12 @@
 #include "DungeonShared.h"
 #include "DBCStructure.h"
 
+/**
+ * \addtogroup dungeonfinder
+ * @{
+ * \file
+ */
+
 namespace Dungeon
 {
     class Dungeon
@@ -52,4 +58,7 @@ namespace Dungeon
         DungeonId m_id; ///< Id of the dungeon
     };
 };
+
+/** @} */
+
 #endif
