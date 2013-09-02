@@ -5,7 +5,6 @@
 
 namespace Dungeon
 {
-    
     class GroupProposal
     {
     public:
@@ -29,11 +28,11 @@ namespace Dungeon
          */
         bool CanCreateFullGroup() const;
         
-        const inline PlayerInfo* GetHeal() const { return m_heal; };
-        const inline PlayerInfo* GetTank() const { return m_tank; };
-        const inline PlayerInfoList GetDpsers() const { return m_dpsers; };
+        const inline PlayerInfoList& GetPossibleHealers() const { return m_healers; };
+        const inline PlayerInfoList& GetPossibleTanks() const { return m_tanks; };
+        const inline PlayerInfoList& GetPossibleDpsers() const { return m_dpsers; };
         
-        void AddPlayer(DungeonFinderRoles role, const PlayerInfo* pInfo);
+        void AddPlayer(PlayerInfo* pInfo);
     private:
         /**
          * Unique players, no duplicates as the m_tanks,m_healers and m_dpsers may have.

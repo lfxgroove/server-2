@@ -1,4 +1,24 @@
+/*
+ * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #include "DungeonFinder.h"
+#include "DBCStores.h"
+#include "ProgressBar.h"
 
 namespace Dungeon
 {
@@ -23,10 +43,10 @@ namespace Dungeon
         }
     }
     
-    Finder::Init()
+    void Finder::Init()
     {
         uint32 numDungeons = sLFGDungeonStore.GetNumRows();
-        const LFGDungeonEntry* dungeon;
+        const LFGDungeonEntry* dungeonDBC;
     
         BarGoLink bar(numDungeons);
     
@@ -38,19 +58,19 @@ namespace Dungeon
             if (!dungeonDBC)
                 continue;
         
-            QueryResult* result = WorldDatabase.Query(
+            QueryResult* result = WorldDatabase.PQuery(
                 "SELECT item_id, how_many, unk "
                 "FROM dungeon_rewards "
                 "WHERE dungeon_id = %d",
-                dungeonDBC->Id);
+                dungeonDBC->ID);
         
             if (!result)
             {
-                sLog.outError("Couldn't find any rewards for dungeon %d", dungeonDBC->Id);
+                sLog.outError("Couldn't find any rewards for dungeon %d", dungeonDBC->ID);
                 continue;
             }
         
-            Dungeon* dungeon = new Dungeon(dungeonDBC->Id, dungeonDBC);
+            Dungeon* dungeon = new Dungeon(dungeonDBC);
         
             do
             {
@@ -63,30 +83,28 @@ namespace Dungeon
             while(result->NextRow());
             delete result; //Is this needed or not?
         
-            m_AllDungeons.push_back(dungeon);
+            m_allDungeons.push_back(dungeon);
         }
     
         sLog.outString();
         sLog.outString(">> Loaded " SIZEFMTD " dungeons and their rewards", numDungeons);
     }
 
-    void Finder::AddToQueue(PlayerInfo* pInfo)
-    {
-        if (pInfo->CanTank())
-            m_tankers.push_back(pInfo);
+    // void Finder::AddToQueue(PlayerInfo* pInfo)
+    // {
+    //     if (pInfo->CanTank())
+    //         m_tankers.push_back(pInfo);
 
-        if (pInfo->CanHeal())
-            m_healers.push_back(pInfo);
+    //     if (pInfo->CanHeal())
+    //         m_healers.push_back(pInfo);
 
-        if (pInfo->CanDps())
-            m_dpsers.push_back(pInfo);
-    
-    }
+    //     if (pInfo->CanDps())
+    //         m_dpsers.push_back(pInfo);
+        
+    // }
     
     void Finder::Update()
     {
-        time_t currTime = time();
-
         for (GroupProposalList::iterator it = m_groupProposals.begin();
              it != m_groupProposals.end();
              ++it)
@@ -95,61 +113,19 @@ namespace Dungeon
             if (pProp->CanCreateFullGroup())
             {
                 //Off we go more to do here
+                //CreateGroup(); etcetc
                 m_groupProposals.erase(it);
                 delete pProp;
             }
         }
-        
-        // for (PlayerInfoList::iterator it = m_queue.begin();
-        //      it != m_queue.end();
-        //      ++it)
-        // {
-        //     PlayerInfo* pInfo = *it;
-        //     GroupProposal* pProp = pInfo->proposal;
-        //     if (!pProp)
-        //         pProp = new GroupProposal;
-            
-        //     if (!pProp->CanCreateFullGroup())
-        //         pProp->AddPlayer(pInfo);
-        // }
-    
     }
     
-    // void Finder::FindRole(DungeonFinderRoles role, GroupProposal* proposal)
-    // {
-    //     PlayerListInfo::iterator it, end;
-    //     switch (role)
-    //     {
-    //     case ROLE_DPS:
-    //         it = m_dpsers.begin();
-    //         end = m_dpsers.end();
-    //         break;
-    //     case ROLE_HEAL:
-    //         it = m_healers.begin();
-    //         end = m_healers.end();
-    //         break;
-    //     case ROLE_TANK:
-    //         it = m_tanks.begin();
-    //         end = m_tanks.end();
-    //         break;
-    //     }
-    //     for (it; it != end; ++it)
-    //     {
-    //         PlayerInfo* pInfo = *it;
-    //         if (!pInfo->HasProposal() && pInfo->Fits(proposal))
-    //         {
-    //             pInfo->pGroupProposal = proposal;
-    //             proposal->AddPlayer(role, pInfo);
-    //         }
-    //     }
-    // }
-    
-    bool Finder::AddPlayerToQueue(PlayerInfo* pInfo)
+    bool Finder::AddToQueue(PlayerInfo* pInfo)
     {
         //Add checks for dps classes not being able to queue as healer etc.
         if (pInfo->CanHeal() && pInfo->CanDps() && pInfo->CanTank())
             return false;
-
+        
         m_queue.push_back(pInfo);
         for (GroupProposalList::iterator it = m_groupProposals.begin();
              it != m_groupProposals.end();
@@ -166,7 +142,7 @@ namespace Dungeon
         //Since we don't have anyone in this proposal just yet this AddPlayer() will be okay
         GroupProposal* pProp = new GroupProposal();
         pProp->AddPlayer(pInfo);
-        m_groupProposals.push_back(pInfo);
+        m_groupProposals.push_back(pProp);
         return true;
     }
 }

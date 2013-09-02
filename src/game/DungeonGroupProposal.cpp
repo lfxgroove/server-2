@@ -8,8 +8,8 @@ namespace Dungeon
             return true;
         
         //Very basic, not finished at all
-        pInfoCheck = *(m_players.begin());
-        if (pInfo->pPlayer->GetLevel() - pInfoCheck->pPlayer->GetLevel() <= 10)
+        PlayerInfo* pInfoCheck = *(m_players.begin());
+        if (pInfo->pPlayer->getLevel() - pInfoCheck->pPlayer->getLevel() <= 10)
             return true;
         else
             return false;
@@ -20,7 +20,7 @@ namespace Dungeon
         return m_players.size() == 5;
     }
     
-    void GroupProposal::AddPlayer(const PlayerInfo* pInfo)
+    void GroupProposal::AddPlayer(PlayerInfo* pInfo) //add const to the pointer?
     {
         if (pInfo->CanDps())
             m_dpsers.push_back(pInfo);

@@ -2157,19 +2157,19 @@ struct LFGDungeonEntry
     uint32  grouptype;                                      // 31
     //char*   desc[16];                                     // 32-47 Description
     // Helpers
-    uint32 Entry() const { return ID + (type << 24); }
+    uint32 Entry() const { return ID | (type << 24); };
     /** 
      * Extracts the type from a dungeon entry, see \ref DungeonEntry for more info.
      * @param entry the entry you would like to find the type for
      * @return the type of the dungeon
      */
-    static uint32 TypeFromEntry(uint32 entry) const { return entry & 0xFF000000; };
+    static uint32 TypeFromEntry(uint32 entry) { return entry & 0xFF000000; };
     /** 
      * Extracts the id from a dungeon entry, see \ref DungeonEntry for more info.
      * @param entry the entry you would like to find the id for
      * @return the id of the dungeon
      */
-    static uint32 IdFromEntry(uint32 entry) const { return entry & 0xFFFFFF; };
+    static uint32 IdFromEntry(uint32 entry) { return entry & 0xFFFFFF; };
 };
 
 // GCC have alternative #pragma pack() syntax and old gcc version not support pack(pop), also any gcc version not support it at some platform

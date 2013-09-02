@@ -20,13 +20,14 @@
 #define MANGOS_DUNGEON_H
 
 #include "DungeonShared.h"
+#include "DBCStructure.h"
 
-namespace DungeonFinder
+namespace Dungeon
 {
     class Dungeon
     {
     public:
-        Dungeon(DungeonId id, const LFGDungeonEntry* dungeonDBC);
+        Dungeon(const LFGDungeonEntry* dungeonDBC);
         virtual ~Dungeon();
         
         RewardList GetRewards() const;
@@ -42,12 +43,13 @@ namespace DungeonFinder
          */
         Reward* CreateAndAddReward();
         RewardList& GetRewards();
-        const RewardList& GetRewards() const;
+        const RewardList& GetConstRewards() const;
         
-        DungeonEntry Entry() const { return dungeonEntry->Entry(); };
+        DungeonEntry Entry() const { return m_dungeonEntry->Entry(); };
     private:
         const LFGDungeonEntry* m_dungeonEntry;
         RewardList m_rewards; ///< Rewards we will receive upon completing the dungeon
+        DungeonId m_id; ///< Id of the dungeon
     };
 };
 #endif

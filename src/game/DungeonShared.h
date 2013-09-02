@@ -1,6 +1,10 @@
 #ifndef MANGOS_DUNGEON_SHARED_H
 #define MANGOS_DUNGEON_SHARED_H
 
+#include "SharedDefines.h"
+#include "Common.h"
+#include "Player.h"
+
 namespace Dungeon
 {
     /**
@@ -41,7 +45,7 @@ namespace Dungeon
     /**
      * A DungeonId is only the dungeon's id without any type information. See \ref DungeonEntry
      */
-    typedef DungeonId uint32;
+    typedef uint32 DungeonId;
     /**
      * An DungeonEntry is the same as the dungeon's id and it's type in the same int, ie:
      * \code{.cpp}
@@ -53,17 +57,35 @@ namespace Dungeon
      * \see LFGDungeonEntry::TypeFromEntry
      * \see LFGDungeonEntry::IdFromEntry
      */
-    typedef DungeonEntry uint32;
+    struct PlayerInfo;
+    struct Reward;
+    class GroupProposal;
+    class Dungeon;
+    
+    typedef uint32 DungeonEntry;
     typedef std::list<Reward*> RewardList;
     typedef std::list<Dungeon*> DungeonList;
     typedef std::list<Player*> PlayerList;
     typedef std::vector<DungeonId> DungeonIdVector;
-    
-    struct PlayerInfo;
     typedef std::list<PlayerInfo*> PlayerInfoList;
-
-    class GroupProposal;
     typedef std::list<GroupProposal*> GroupProposalList;
+    
+    struct PlayerInfo
+    {
+        DungeonFinderRoles roles;
+        Player* pPlayer;
+        // Group* pGroup;
+        GroupProposal* pGroupProposal;
+        
+        DungeonIdVector canQueueFor;
+        DungeonIdVector wishToQueueFor;
+        DungeonIdVector isQueuedFor;
+        
+        bool CanTank() const { return roles & ROLE_TANK; };
+        bool CanHeal() const { return roles & ROLE_HEAL; };
+        bool CanDps() const { return roles & ROLE_DPS; };
+        bool CanLead() const { return roles & ROLE_LEAD; };
+    };
     
     struct Reward
     {

@@ -23,28 +23,11 @@
 #include "Database/DatabaseEnv.h"
 #include "DungeonShared.h"
 #include "Dungeon.h"
-#include "DungeonProposition.h"
+#include "DungeonGroupProposal.h"
 
 namespace Dungeon
 {
-    struct PlayerInfo
-    {
-        DungeonFinderRoles roles;
-        Player* pPlayer;
-        // Group* pGroup;
-        GroupProposal* pGroupProposal;
-        
-        DungeonIdVector canQueueFor;
-        DungeonIdVector wishToQueueFor;
-        DungeonIdVector isQueuedFor;
-        
-        bool CanTank() const { return roles & ROLE_TANK; };
-        bool CanHeal() const { return roles & ROLE_HEAL; };
-        bool CanDps() const { return roles & ROLE_DPS; };
-        bool CanLead() const { return roles & ROLE_LEAD; };
-    };
-    
-    class Finder : public MaNGOS::Singleton<DungeonFinder>
+    class Finder : public MaNGOS::Singleton<Finder>
     {
     public:
         Finder();
@@ -59,7 +42,7 @@ namespace Dungeon
          * @param pPlayer the player to try to add to the queue
          * @return false if the player wasn't added to the queue, true otherwise
          */
-        bool AddPlayerToQueue(const PlayerInfo* pPlayer);
+        bool AddToQueue(PlayerInfo* pPlayer);
         
         void StartVoteToBoot(PlayerInfo* pPlayer);
         void BootPlayer(PlayerInfo* pPlayer);

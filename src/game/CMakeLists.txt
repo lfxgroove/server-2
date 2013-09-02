@@ -109,6 +109,13 @@ set(LIBRARY_SRCS
     DBCStructure.h
     debugcmds.cpp
     DuelHandler.cpp
+    Dungeon.cpp
+    Dungeon.h
+    DungeonFinder.cpp
+    DungeonFinder.h
+    DungeonGroupProposal.cpp
+    DungeonGroupProposal.h
+    DungeonShared.h
     DynamicObject.cpp
     DynamicObject.h
     FleeingMovementGenerator.cpp
