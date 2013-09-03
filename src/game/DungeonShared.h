@@ -104,11 +104,15 @@ namespace Dungeon
      */
     struct PlayerInfo
     {
+        //TODO: Add accessor functions here to allow easier refactoring
+        
         DungeonFinderRoles roles; ///< The roles that this \ref Player / \ref PlayerInfo can undertake.
         Player* pPlayer; ///< The \ref Player that this \ref PlayerInfo is associated with
         // Group* pGroup;
         GroupProposal* pGroupProposal; ///< The current proposal for this \ref PlayerInfo
         std::string comment; ///< Can be sent by the client, doesn't seem to be used there though
+        uint32 myWaitTime; ///< Wait time that this \ref Player has waited in ms.
+        bool acceptedProposal; ///< Whether or not we have accepted an ongoing proposal for a group
         
         DungeonIdVector canQueueFor; ///< Dungeons that this \ref PlayerInfo can queue for
         DungeonIdVector wishToQueueFor; ///< Dungeons that this \ref PlayerInfo wishes to queue for

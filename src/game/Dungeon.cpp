@@ -53,4 +53,9 @@ namespace Dungeon
     {
         return m_rewards;
     }
+    
+    bool Dungeon::operator<(const Dungeon& rhs)
+    {
+        return m_id < rhs.m_id;
+    }
 };

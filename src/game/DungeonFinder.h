@@ -73,13 +73,16 @@ namespace Dungeon
          */
         bool AddToQueue(PlayerInfo* pPlayer);
         
+        void ProposalAccepted(Player* pPlayer);
+        void ProposalRejected(Player* pPlayer);
+        
         void StartVoteToBoot(PlayerInfo* pPlayer);
         void BootPlayer(PlayerInfo* pPlayer);
         
         //All times in ms. ADD DOCUMENTATION
         uint32 GetAvgWaitTime() const;
         uint32 GetDpsWaitTime() const;
-        uint32 GetHealWaitTime() const;
+        uint32 GetHealerWaitTime() const;
         uint32 GetTankWaitTime() const;
         
         DungeonList GetAvailableDungeonsForPlayer(Player* pPlayer) const;
@@ -87,17 +90,28 @@ namespace Dungeon
         /** 
          * This will go through all \ref Player s currently in the dungeon finder queue and
          * send them updates about waiting time etc, if they've found a matching group and such.
+         * @param diff the time difference since last call to this method in ms
          */
-        void Update();
+        void Update(time_t diff);
         
         /** 
          * Initializes the \ref Finder for dungeons, fills the dungeon list with some data from
          * the database and such.
          */
         void Init();
-        
+
         //Perhaps add a reloadDb()?
     private:
+        /** 
+         * Sends update packets to the players in the given \ref Dungeon::GroupProposal, these
+         * include: Opcodes::SMSG_LFG_UPDATE_SEARCH, \ref Opcodes::SMSG_LFG_UPDATE_PLAYER,
+         * \ref Opcodes::SMSG_LFG_UPDATE_GROUP, \ref Opcodes::SMSG_LFG_QUEUE_STATUS
+         * \todo Research which opcodes needs to be sent this often and which ones don't.
+         * @param pProp the proposal we would like to send updates about and too
+         */
+        void SendUpdates(const GroupProposal* pProp);
+        void SendProposalToGroup(const GroupProposal* pProp);
+        
         Group* CreateGroup();
         void DisbandGroup(Group* pGroup);
         
@@ -119,6 +133,19 @@ namespace Dungeon
         LockedDungeonMap m_lockedDungeons;
         PlayerInfoMap m_playerInfoMap;
         
+        uint32 m_avgWaitTime; ///< Average wait time of the three, dps, tank and healer, in ms.
+        uint32 m_dpsWaitTime; ///< Average wait time for dpsers, in ms.
+        uint32 m_tankWaitTime; ///< Average wait time for tanks, in ms.
+        uint32 m_healerWaitTime; ///< Average wait time for healers, in ms.
+
+        /**
+         * The idea of grouped here means that we went from queueing to forming an actual group,
+         * measured in ms.
+         */
+        uint32 m_groupedSinceUpdate; 
+        uint32 m_groupedDpsSinceUpdate;
+        uint32 m_groupedHealersSinceUpdate;
+        uint32 m_groupedTanksSinceUpdate;
         time_t m_lastUpdate;
     };
 };
