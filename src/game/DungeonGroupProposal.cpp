@@ -40,7 +40,7 @@ namespace Dungeon
         
         //Very basic, not finished at all
         PlayerInfo* pInfoCheck = *(m_players.begin());
-        if (pInfo->pPlayer->getLevel() - pInfoCheck->pPlayer->getLevel() <= 10)
+        if (pInfo->GetPlayer()->getLevel() - pInfoCheck->GetPlayer()->getLevel() <= 10)
             return true;
         else
             return false;
@@ -62,7 +62,12 @@ namespace Dungeon
             m_tanks.push_back(pInfo);
         m_players.push_back(pInfo);
         
-        FindMatchingDungeons(pInfo->wishToQueueFor);
+        FindMatchingDungeons(pInfo->GetWishQueueFor());
+    }
+
+    const DungeonList& GroupProposal::GetQueuedDungeons() const
+    {
+        //todo: implement
     }
     
     void GroupProposal::FindMatchingDungeons(const DungeonIdVector& matchWith)

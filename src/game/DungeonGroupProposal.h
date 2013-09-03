@@ -70,10 +70,11 @@ namespace Dungeon
         uint8 GetNeededTanks() const;
         uint8 GetNeededHealers() const;
         uint8 GetNeededDpsers() const;
-        
+
+        inline uint8 GetAcceptedCount() { return m_acceptedCount; };
         inline void IncreaseAcceptedCount() { ++m_acceptedCount; };
         
-        DungeonList GetQueuedDungeons() const;
+        const DungeonList& GetQueuedDungeons() const;
         
         /** 
          * Adds a \ref Player and his/her info to this proposal

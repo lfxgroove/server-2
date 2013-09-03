@@ -45,7 +45,7 @@ void WorldSession::HandleLfgSetRoles(WorldPacket& recv_data)
     {
         DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Updating roles to %d for someone",
                          rolesFlags);
-        pInfo->roles = Dungeon::DungeonFinderRoles(rolesFlags);
+        pInfo->SetRoles(Dungeon::DungeonFinderRoles(rolesFlags));
     }
 }
 
@@ -184,8 +184,8 @@ void WorldSession::HandleLfgJoinOpcode(WorldPacket& recv_data)
     Dungeon::PlayerInfo* pInfo = sDungeonFinder.GetPlayerInfo(pPlayer);
     if (!pInfo)
         pInfo = sDungeonFinder.CreatePlayerInfo(pPlayer);
-    pInfo->roles = Dungeon::DungeonFinderRoles(rolesFlags);
-    pInfo->comment = comment;
+    pInfo->SetRoles(Dungeon::DungeonFinderRoles(rolesFlags));
+    pInfo->SetComment(comment);
     // pInfo->canQueueFor = ;
     // pInfo->wishesToQueueFor = ;
     // // pInfo->isQueuedFor = {};

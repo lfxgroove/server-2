@@ -104,8 +104,27 @@ namespace Dungeon
      */
     struct PlayerInfo
     {
-        //TODO: Add accessor functions here to allow easier refactoring
+        inline DungeonFinderRoles GetRoles() const { return roles; };
+        inline Player* GetPlayer() const { return pPlayer; };
+        inline GroupProposal* GetProposal() const { return pGroupProposal; };
+        inline const std::string& GetComment() const { return comment; };
+        inline uint32 GetWaitTime() const { return myWaitTime; };
+        inline bool HasAcceptedProposal() const { return acceptedProposal; };
+        inline const DungeonIdVector& GetCanQueueFor() const { return canQueueFor; };
+        inline const DungeonIdVector& GetWishQueueFor() const { return wishToQueueFor; };
+        inline const DungeonIdVector& GetIsQueuedFor() const { return isQueuedFor; };
         
+        inline void SetRoles(DungeonFinderRoles newRoles) { roles = newRoles; };
+        inline void SetComment(const std::string& newComment) { comment = newComment; };
+        inline void SetAcceptedProposal(bool accepted) { acceptedProposal = accepted; };
+        inline void SetPlayer(Player* player) { pPlayer = player; };
+        
+        bool CanTank() const { return roles & ROLE_TANK; };
+        bool CanHeal() const { return roles & ROLE_HEAL; };
+        bool CanDps() const { return roles & ROLE_DPS; };
+        bool CanLead() const { return roles & ROLE_LEAD; };
+        
+    private:
         DungeonFinderRoles roles; ///< The roles that this \ref Player / \ref PlayerInfo can undertake.
         Player* pPlayer; ///< The \ref Player that this \ref PlayerInfo is associated with
         // Group* pGroup;
@@ -117,11 +136,6 @@ namespace Dungeon
         DungeonIdVector canQueueFor; ///< Dungeons that this \ref PlayerInfo can queue for
         DungeonIdVector wishToQueueFor; ///< Dungeons that this \ref PlayerInfo wishes to queue for
         DungeonIdVector isQueuedFor; ///< Dungeons that this \ref PlayerInfo is currently queued for
-        
-        bool CanTank() const { return roles & ROLE_TANK; };
-        bool CanHeal() const { return roles & ROLE_HEAL; };
-        bool CanDps() const { return roles & ROLE_DPS; };
-        bool CanLead() const { return roles & ROLE_LEAD; };
     };
     
     struct Reward

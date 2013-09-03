@@ -109,18 +109,19 @@ namespace Dungeon
             return;
         }
         
-        PlayerInfo* pInfo = *it;
-        pInfo->acceptedProposal = true;
+        PlayerInfo* pInfo = it->second;
+        pInfo->SetAcceptedProposal(true);
         DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Player %u just accepted the proposal to join the"
-                         " proposal %x", pPlayer->GetObjectGuid(), pInfo->pGroupProposal);
+                         " proposal %x", pPlayer->GetObjectGuid(), pInfo->GetProposal());
         
-        pInfo->pGroupProposal->IncreaseAcceptedCount();
-        if (pInfo->pGroupProposal->GetAcceptedCount() == 5)
+        pInfo->GetProposal()->IncreaseAcceptedCount();
+        //TODO: replace 5 with GetGroupSize() to accomodate for raids etc aswell
+        if (pInfo->GetProposal()->GetAcceptedCount() == 5)
         {
             //actually create the group and remove the proposal
         }
     }
-
+    
     void Finder::ProposalRejected(Player* pPlayer)
     {
         PlayerInfoMap::iterator it = m_playerInfoMap.find(pPlayer);
@@ -131,11 +132,11 @@ namespace Dungeon
             return;
         }
         
-        PlayerInfo* pInfo = *it;
+        PlayerInfo* pInfo = it->second;
         //should this one be removed from queue in this case?
-        pInfo->acceptedProposal = false;
+        pInfo->SetAcceptedProposal(false);
         DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Player %u just rejected the proposal to join the"
-                         " proposal %x", pPlayer->GetObjectGuid(), pInfo->pGroupProposal);
+                         " proposal %x", pPlayer->GetObjectGuid(), pInfo->GetProposal());
 
         //More things should be done here, try to find a replacement from some of the other
         //current proposals and such.
@@ -211,7 +212,7 @@ namespace Dungeon
              it != players.end();
              ++it)
         {
-            WorldSession* session = (*it)->pPlayer->GetSession();
+            WorldSession* session = (*it)->GetPlayer()->GetSession();
             
             WorldPacket searchUpdate(SMSG_LFG_UPDATE_SEARCH);
             searchUpdate << uint8(0); //no data for now, this should be changed
@@ -231,16 +232,16 @@ namespace Dungeon
             {
                 playerUpdate << uint32((*itr)->Entry());
             }
-            playerUpdate << (*it)->comment;
+            playerUpdate << (*it)->GetComment();
             session->SendPacket(&playerUpdate);
-
+            
             WorldPacket partyUpdate(SMSG_LFG_UPDATE_PARTY);
             //TODO
             
             WorldPacket queueStats(SMSG_LFG_QUEUE_STATUS);
             //commented out for compilation atm
             //queueStats << uint32(dungeonId); //which dungeon is this the wait time for (?)
-            queueStats << uint32((*it)->myWaitTime); //myWait
+            queueStats << uint32((*it)->GetWaitTime()); //myWait
             queueStats << uint32(GetAvgWaitTime()); //avg wait
             queueStats << uint32(GetTankWaitTime()); //tankWait
             queueStats << uint32(GetHealerWaitTime()); //healerWait
@@ -259,7 +260,7 @@ namespace Dungeon
             return NULL;
         
         PlayerInfo* pPlayerInfo = new PlayerInfo();
-        pPlayerInfo->pPlayer = pPlayer;
+        pPlayerInfo->SetPlayer(pPlayer);
         std::pair<PlayerInfoMap::iterator, bool> insertion;
         insertion = m_playerInfoMap.insert(std::make_pair(pPlayer, pPlayerInfo));
         if (insertion.second)
