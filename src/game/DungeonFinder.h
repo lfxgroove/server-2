@@ -116,6 +116,18 @@ namespace Dungeon
         void DisbandGroup(Group* pGroup);
         
         void ReadyCheck(Group* pGroup);
+
+        /** 
+         * Checks that the given \ref Player only has queued as something that his class can queue
+         * as, ie: a shaman can only heal or dps, not tank. This function makes sure that even if
+         * he tried to queue as that we'll just remove that flag when queueing him for real.
+         *
+         * \todo This might lead to stray people in the queue making the memory come to an end if
+         * it goes on forever, ie: a shaman tries to queue as tank only and that role is removed ->
+         * possibly problem since he won't match any \ref GroupProposal at all :(
+         * @param pInfo info about the \ref Player that's queued
+         */
+        void CheckAndChangeRoles(PlayerInfo* pInfo);
         
         PlayerInfoList m_queue;
         // PlayerInfoList m_dpsers;
@@ -123,7 +135,7 @@ namespace Dungeon
         // PlayerInfoList m_tankers;
         PlayerInfoList m_grouped;
         GroupProposalList m_groupProposals;
-        DungeonList m_allDungeons; ///< These are loaded on server start
+        DungeonMap m_allDungeons; ///< These are loaded on server start
         /**
          * This one is filled with data from the db when we start mangosd, after that it's continuosly
          * updated to keep track of what instances each player has locked for some reason. And also

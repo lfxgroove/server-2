@@ -53,7 +53,7 @@ namespace Dungeon
          * @param pInfo The possible addition to the group
          * @return true if we can add this person to the proposition, false otherwise
          */
-        bool Fits(const PlayerInfo* pInfo) const;
+        bool Fits(const PlayerInfo* pInfo);
         
         /** 
          * Checks if we can create a group with the current members, if we can we should do that
@@ -118,8 +118,9 @@ namespace Dungeon
         PlayerInfoList m_dpsers; ///< All possible dpsers, may have duplicates in m_tanks and m_healers
         
         ProposalState m_state; ///< The current state of this group, see \ref ProposalState
-        
-        DungeonIdVector m_wishedDungeons; ///< The dungeons that everyone in the group would like to do
+
+        //Sort this one?
+        DungeonEntryVector m_wishedDungeons; ///< Dungeons that everyone in the group would like to do
         
         uint8 m_acceptedCount; ///< How many people have accepted our proposal?
     };

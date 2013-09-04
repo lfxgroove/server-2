@@ -52,8 +52,6 @@ namespace Dungeon
         const RewardList& GetConstRewards() const;
         
         DungeonEntry Entry() const { return m_dungeonEntry->Entry(); };
-
-        bool operator<(const Dungeon& rhs);
     private:
         const LFGDungeonEntry* m_dungeonEntry;
         RewardList m_rewards; ///< Rewards we will receive upon completing the dungeon

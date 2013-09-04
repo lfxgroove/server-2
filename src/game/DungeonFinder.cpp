@@ -28,11 +28,11 @@ namespace Dungeon
 
     Finder::~Finder()
     {
-        for (DungeonList::iterator it = m_allDungeons.begin();
+        for (DungeonMap::iterator it = m_allDungeons.begin();
              it != m_allDungeons.end();
              ++it)
         {
-            delete *it;
+            delete it->second;
         }
 
         for (GroupProposalList::iterator it = m_groupProposals.begin();
@@ -89,16 +89,14 @@ namespace Dungeon
             }
             while(result->NextRow());
             delete result; //Is this needed or not?
-        
-            m_allDungeons.push_back(dungeon);
+            
+            m_allDungeons.insert(std::make_pair(dungeonDBC->ID, dungeon));// push_back(dungeon);
         }
-
-        m_allDungeons.sort();
         
         sLog.outString();
         sLog.outString(">> Loaded " SIZEFMTD " dungeons and their rewards", numDungeons);
     }
-
+    
     void Finder::ProposalAccepted(Player* pPlayer)
     {
         PlayerInfoMap::iterator it = m_playerInfoMap.find(pPlayer);
@@ -145,6 +143,7 @@ namespace Dungeon
     void Finder::Update(time_t diff)
     {
         //We should update average wait times here aswell.
+        //Or rather when we form a full group that actually get's to do anything
         
         for (GroupProposalList::iterator it = m_groupProposals.begin();
              it != m_groupProposals.end();
@@ -166,12 +165,45 @@ namespace Dungeon
             }
         }
     }
+
+    void Finder::CheckAndChangeRoles(PlayerInfo* pInfo)
+    {
+        Player* pPlayer = pInfo->GetPlayer();
+        switch (pPlayer->getClass())
+        {
+        case CLASS_WARRIOR:
+            if (pInfo->CanHeal() || pInfo->CanDps())
+                pInfo->SetRoles(ROLE_TANK);
+            break;
+        case CLASS_MAGE:
+        case CLASS_WARLOCK:
+        case CLASS_HUNTER:
+        case CLASS_ROGUE:
+            if (pInfo->CanHeal() || pInfo->CanTank())
+                pInfo->SetRoles(ROLE_DPS);
+            break;
+        case CLASS_DRUID:
+        case CLASS_PALADIN:
+            //check spec? That seems overzealous
+            break;
+        case CLASS_SHAMAN:
+        case CLASS_PRIEST:
+            if (pInfo->CanTank())
+                pInfo->SetRoles(DungeonFinderRoles(pInfo->GetRoles() & ~ROLE_TANK));
+            break;
+        case CLASS_DEATH_KNIGHT:
+            if (pInfo->CanHeal())
+                pInfo->SetRoles(DungeonFinderRoles(pInfo->GetRoles() & ~ROLE_HEAL));
+            break;
+        default:
+            break;
+        }
+    }
     
     bool Finder::AddToQueue(PlayerInfo* pInfo)
     {
         //Add checks for dps classes not being able to queue as healer etc.
-        if (pInfo->CanHeal() && pInfo->CanDps() && pInfo->CanTank())
-            return false;
+        CheckAndChangeRoles(pInfo);
         
         m_queue.push_back(pInfo);
         for (GroupProposalList::iterator it = m_groupProposals.begin();
@@ -187,6 +219,7 @@ namespace Dungeon
         }
         
         //Since we don't have anyone in this proposal just yet this AddPlayer() will be okay
+        //without checking Fits()
         GroupProposal* pProp = new GroupProposal();
         pProp->AddPlayer(pInfo);
         m_groupProposals.push_back(pProp);
@@ -283,7 +316,7 @@ namespace Dungeon
         else
             return NULL;
     }
-
+    
     uint32 Finder::GetAvgWaitTime() const
     {
         return m_avgWaitTime;

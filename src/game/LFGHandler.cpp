@@ -123,8 +123,9 @@ void WorldSession::HandleLfgGetPlayerInfo(WorldPacket& recv_data)
         const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
         if (!dungeon || i % 2 == 0)
             continue;
-        packet << uint32(dungeon->Entry());
-        packet << uint32(4 % i);
+        packet << uint32(dungeon->ID);
+        packet << uint32(i % 4);
+        DEBUG_LOG("Sending dungeon %d as locked reason %d", dungeon->ID, i%4);
     }
     
     SendPacket(&packet);
@@ -179,18 +180,20 @@ void WorldSession::HandleLfgJoinOpcode(WorldPacket& recv_data)
                          "Critical: This session doesn't have a player, this won't do!");
         return;
     }
-
+    
     //Check the group proposal here aswell, if we already have one it might need to be updated
     Dungeon::PlayerInfo* pInfo = sDungeonFinder.GetPlayerInfo(pPlayer);
     if (!pInfo)
         pInfo = sDungeonFinder.CreatePlayerInfo(pPlayer);
     pInfo->SetRoles(Dungeon::DungeonFinderRoles(rolesFlags));
     pInfo->SetComment(comment);
+    pInfo->SetWishesToQueueFor(dungeons);
+    sDungeonFinder.AddToQueue(pInfo);
+    //Here we should somehow ask sDungeonFinder to do something nice and then
+    //create some packets for us that we can send
+    //which will fill the following info at least: 
     // pInfo->canQueueFor = ;
-    // pInfo->wishesToQueueFor = ;
     // // pInfo->isQueuedFor = {};
-    
-    
     
     WorldPacket response(SMSG_LFG_JOIN_RESULT);
     response << uint32(0x0); //players info coming

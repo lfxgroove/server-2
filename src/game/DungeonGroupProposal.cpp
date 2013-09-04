@@ -2,7 +2,7 @@
 
 namespace Dungeon
 {
-    bool GroupProposal::Fits(const PlayerInfo* pInfo) const
+    bool GroupProposal::Fits(const PlayerInfo* pInfo)
     {
         if (m_players.size() == 0)
             return true;
@@ -19,31 +19,35 @@ namespace Dungeon
         if (m_tanks.size() >= 1
             && !pInfo->CanHeal() && !pInfo->CanDps())
             return false;
-        
+
+        //If we haven't queud for anything at all when calling this one something is off
+        MANGOS_ASSERT(m_wishedDungeons.size() > 0);
         //Check if we want to queue for the same dungeons at all etc.
-        if (m_wishedDungeons.size() > 0)
+        //Should these vectors be sorted to allow earlier termination?
+        DungeonEntryVector newWish;
+        for (DungeonEntryVector::const_iterator i = m_wishedDungeons.begin();
+             i != m_wishedDungeons.end();
+             ++i)
         {
-            //Sort these 2 lists?
-            // for (DungeonIdVector::const_iterator i = m_wishedDungeons.begin();
-            //      i != m_wishedDungeons.end();
-            //      ++i)
-            // {
-            //     for (DungeonIdVector::const_iterator j = pInfo->wishToQueueFor.begin();
-            //          j != pInfo->wishToQueueFor.end();
-            //          ++j)
-            //     {
-            //         if (*j == *i)
-            //             break;
-            //     }
-            // }
+            for (DungeonEntryVector::const_iterator j = pInfo->GetCanQueueFor().begin();
+                 j != pInfo->GetCanQueueFor().end();
+                 ++j)
+            {
+                if (*i == *j)
+                    newWish.push_back(*i);
+            }
         }
-        
-        //Very basic, not finished at all
-        PlayerInfo* pInfoCheck = *(m_players.begin());
-        if (pInfo->GetPlayer()->getLevel() - pInfoCheck->GetPlayer()->getLevel() <= 10)
-            return true;
-        else
+        if (newWish.size() == 0)
             return false;
+        
+        m_wishedDungeons = newWish; //Perhaps do a swap() instead?
+        return true;
+        //Very basic, not finished at all
+        // PlayerInfo* pInfoCheck = *(m_players.begin());
+        // if (pInfo->GetPlayer()->getLevel() - pInfoCheck->GetPlayer()->getLevel() <= 10)
+        //     return true;
+        // else
+        //     return false;
     }
     
     bool GroupProposal::CanCreateFullGroup() const
@@ -64,7 +68,7 @@ namespace Dungeon
         
         FindMatchingDungeons(pInfo->GetWishQueueFor());
     }
-
+    
     const DungeonList& GroupProposal::GetQueuedDungeons() const
     {
         //todo: implement

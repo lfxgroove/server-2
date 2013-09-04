@@ -91,8 +91,10 @@ namespace Dungeon
     
     typedef std::list<Reward*> RewardList;
     typedef std::list<Dungeon*> DungeonList;
+    typedef std::map<DungeonId, Dungeon*> DungeonMap;
     typedef std::list<Player*> PlayerList;
     typedef std::vector<DungeonId> DungeonIdVector;
+    typedef std::vector<DungeonEntry> DungeonEntryVector;
     typedef std::list<PlayerInfo*> PlayerInfoList;
     typedef std::list<GroupProposal*> GroupProposalList;
     typedef std::map<Player*, DungeonList> LockedDungeonMap;
@@ -107,17 +109,18 @@ namespace Dungeon
         inline DungeonFinderRoles GetRoles() const { return roles; };
         inline Player* GetPlayer() const { return pPlayer; };
         inline GroupProposal* GetProposal() const { return pGroupProposal; };
-        inline const std::string& GetComment() const { return comment; };
         inline uint32 GetWaitTime() const { return myWaitTime; };
+        inline const std::string& GetComment() const { return comment; };
         inline bool HasAcceptedProposal() const { return acceptedProposal; };
-        inline const DungeonIdVector& GetCanQueueFor() const { return canQueueFor; };
-        inline const DungeonIdVector& GetWishQueueFor() const { return wishToQueueFor; };
-        inline const DungeonIdVector& GetIsQueuedFor() const { return isQueuedFor; };
+        inline const DungeonEntryVector& GetCanQueueFor() const { return canQueueFor; };
+        inline const DungeonEntryVector& GetWishQueueFor() const { return wishToQueueFor; };
+        inline const DungeonEntryVector& GetIsQueuedFor() const { return isQueuedFor; };
         
         inline void SetRoles(DungeonFinderRoles newRoles) { roles = newRoles; };
         inline void SetComment(const std::string& newComment) { comment = newComment; };
         inline void SetAcceptedProposal(bool accepted) { acceptedProposal = accepted; };
         inline void SetPlayer(Player* player) { pPlayer = player; };
+        inline void SetWishesToQueueFor(DungeonEntryVector& dungeons) { wishToQueueFor = dungeons; };
         
         bool CanTank() const { return roles & ROLE_TANK; };
         bool CanHeal() const { return roles & ROLE_HEAL; };
@@ -133,9 +136,9 @@ namespace Dungeon
         uint32 myWaitTime; ///< Wait time that this \ref Player has waited in ms.
         bool acceptedProposal; ///< Whether or not we have accepted an ongoing proposal for a group
         
-        DungeonIdVector canQueueFor; ///< Dungeons that this \ref PlayerInfo can queue for
-        DungeonIdVector wishToQueueFor; ///< Dungeons that this \ref PlayerInfo wishes to queue for
-        DungeonIdVector isQueuedFor; ///< Dungeons that this \ref PlayerInfo is currently queued for
+        DungeonEntryVector canQueueFor; ///< Dungeons that this \ref PlayerInfo can queue for
+        DungeonEntryVector wishToQueueFor; ///< Dungeons that this \ref PlayerInfo wishes to queue for
+        DungeonEntryVector isQueuedFor; ///< Dungeons that this \ref PlayerInfo is currently queued for
     };
     
     struct Reward
