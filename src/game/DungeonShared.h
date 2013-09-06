@@ -36,6 +36,21 @@ namespace Dungeon
     };
     
     /**
+     * The different reasons for a instance being locked. Sent as the lockReason in the packets
+     * \ref Opcodes::SMSG_LFG_PARTY_INFO and \ref Opcodes::SMSG_LFG_PLAYER_INFO.
+     * \todo Document itemelevel and how we calculate the average, don't know that yet
+     */
+    enum DungeonFinderLockReasons
+    {
+        LOCKED_EXPANSION_TOO_LOW = 1, ///< You don't have the right expansion for this instance
+        LOCKED_LEVEL_TOO_LOW = 2, ///< Your level is too low to do this instance
+        LOCKED_LEVEL_TOO_HIGH = 3, ///< Your level is too high to do this instance
+        LOCKED_GEAR_TOO_LOW = 4,///< You have too bad gear to do this instance
+        LOCKED_GEAR_TOO_HIGH = 5, ///< You have too good gear to do this instance
+        LOCKED_RAID = 6 ///< What's this? That we're locked to another raid instance already?
+    };
+    
+    /**
      * These are the different roles you can apply for when joining the dungeon finder
      * queue, the client makes some checks so that a mage can't join as dps etc. But this is
      * (read will be) enforced on server side aswell. This is used as a bitflag, so to queue

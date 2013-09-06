@@ -95,14 +95,14 @@ void WorldSession::HandleLfgGetPlayerInfo(WorldPacket& recv_data)
             ++numDungeons;
     }
     
-    WorldPacket packet(SMSG_LFG_PLAYER_INFO, numDungeons * 36 + 1 + 4 + 0);//(numDungeons / 2) * 4);
+    WorldPacket packet(SMSG_LFG_PLAYER_INFO);//, numDungeons * 36 + 1 + 4 + 0);//(numDungeons / 2) * 4);
     
     DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Sending %d instances with rewards", numDungeons);
     packet << uint8(numDungeons);
     for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
     {
         const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
-        if (!dungeon || i % 2 == 1)
+        if (!dungeon)// || i % 2 == 1)
             continue;
         packet << uint32(dungeon->Entry());
         packet << uint8(0); //doneToday
@@ -117,17 +117,16 @@ void WorldSession::HandleLfgGetPlayerInfo(WorldPacket& recv_data)
     }
     
     // packet << uint32(0);
-    packet << uint32(numDungeons/2);
+    packet << uint32(numDungeons);
+    int j = 300;
     for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
     {
         const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
-        if (!dungeon || i % 2 == 0)
+        if (!dungeon)// || i % 2 == 0)
             continue;
-        packet << uint32(dungeon->ID);
-        packet << uint32(i % 4);
-        DEBUG_LOG("Sending dungeon %d as locked reason %d", dungeon->ID, i%4);
+        packet << uint32(dungeon->ID & 0xFFFFFF); //remove 0xFFFFFF?
+        packet << uint32(4); //lockReason
     }
-    
     SendPacket(&packet);
 }
 
@@ -136,13 +135,33 @@ void WorldSession::HandleLfgGetPartyInfo(WorldPacket& recv_data)
     DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_GET_PARTY_INFO RECEIVED");
     recv_data.hexlike();
     
-    WorldPacket packet(SMSG_LFG_PARTY_INFO, 13);
-    packet << uint8(0);
+    int numDungeons = 0;
+    for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
+    {
+        const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
+        if (dungeon)
+            ++numDungeons;
+    }
+    
+    WorldPacket partyInfo(SMSG_LFG_PARTY_INFO);
+    partyInfo << uint8(1); //one  player
+    partyInfo << GetPlayer()->GetObjectGuid();
+    partyInfo << uint32(numDungeons); //number of locked dungeons
+    for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
+    {
+        const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
+        if (!dungeon)
+            continue;
+        partyInfo << uint32(dungeon->ID & 0xFFFFFF); //dungeonId
+        partyInfo << uint32(4); //lockReason
+    }
+    SendPacket(&partyInfo);
+    // WorldPacket packet(SMSG_LFG_PARTY_INFO, 13);
+    // packet << uint8(0);
     // packet << uint8(1); // ourselves as a player are coming
     // packet << GetPlayer()->GetObjectGuid();
     // packet << uint32(0); //no locked dungeons
-
-    SendPacket(&packet);
+    // SendPacket(&packet);
 }
 
 void WorldSession::HandleLfgJoinOpcode(WorldPacket& recv_data)
