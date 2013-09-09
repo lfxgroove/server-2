@@ -199,11 +199,47 @@ namespace Dungeon
             break;
         }
     }
+
+    const DungeonEntryVector& FindDungeonsCanQueueFor(PlayerInfo* pInfo)
+    {
+        struct Compare
+        {
+            Compare() {};
+            bool operator()(const DungeonEntry& lhs, const DungeonLock& rhs)
+            {
+                return lhs < DungeonEntry(rhs.dungeon->Entry());
+            }
+        };
+        //Would be nice with a std::set_intersection call here instead but we can't mix types with
+        //that sadly
+        const DungeonEntryVector& wish = pInfo->GetWishQueueFor();
+        const DungeonLockSet& locked = pInfo->GetLockedDungeons();
+        DungeonEntryVector canQueue;
+        Compare cmp;
+
+        for (DungeonEntryVector::const_iterator i = wish.begin();
+             i != wish.end();
+             ++i)
+        {
+            for (DungeonLockSet::const_iterator j = locked.begin();
+                 j != locked.end();
+                 ++j)
+            {
+                if (cmp(*i, *j))
+                {
+                    canQueue.push_back(*i);
+                }
+            }
+        }
+    }
     
     bool Finder::AddToQueue(PlayerInfo* pInfo)
     {
         //Add checks for dps classes not being able to queue as healer etc.
         CheckAndChangeRoles(pInfo);
+
+        //intersects the wishesToQueueFor and lockedDungeons
+        pInfo->SetCanQueueFor(FindDungeonsCanQueueFor(pInfo));
         
         m_queue.push_back(pInfo);
         for (GroupProposalList::iterator it = m_groupProposals.begin();

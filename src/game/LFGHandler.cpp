@@ -210,7 +210,7 @@ void WorldSession::HandleLfgJoinOpcode(WorldPacket& recv_data)
 
     DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Got this data: num %d, first dungeon id: %d comment %s",
                      dungeonsCount, dungeons[0] & 0xFFFFFF, comment.c_str());
-
+    
     Player* pPlayer = GetPlayer();
     if (!pPlayer)
     {
@@ -221,8 +221,9 @@ void WorldSession::HandleLfgJoinOpcode(WorldPacket& recv_data)
     
     //Check the group proposal here aswell, if we already have one it might need to be updated
     Dungeon::PlayerInfo* pInfo = sDungeonFinder.GetPlayerInfo(pPlayer);
-    if (!pInfo)
-        pInfo = sDungeonFinder.CreatePlayerInfo(pPlayer);
+    //This is already done in the GetPlayerInfo(), make create() private
+    // if (!pInfo)
+    //     pInfo = sDungeonFinder.CreatePlayerInfo(pPlayer);
     pInfo->SetRoles(Dungeon::DungeonFinderRoles(rolesFlags));
     pInfo->SetComment(comment);
     pInfo->SetWishesToQueueFor(dungeons);

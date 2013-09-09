@@ -196,6 +196,7 @@ namespace Dungeon
         inline const DungeonEntryVector& GetIsQueuedFor() const { return isQueuedFor; };
         inline int GetLastUpdatedLevelForLock() const { return lastChangedLevel; };
         
+        inline void SetCanQueueFor(const DungeonEntryVector& canQueue) { canQueueFor = canQueue; };
         inline void SetLastUpdatedLevelForLock(int newLevel) { lastChangedLevel = newLevel; };
         inline void SetLockedDungeons(const DungeonLockSet& locked) { lockedDungeons = locked; };
         inline void SetRoles(DungeonFinderRoles newRoles) { roles = newRoles; };
@@ -220,6 +221,7 @@ namespace Dungeon
         uint32 lastChangedLevel; ///< Last level that lockedDungeons was changed
         
         DungeonLockSet lockedDungeons; ///< Dungeons that this \ref PlayerInfo can't queue for
+        //Turn these into sets aswell?
         DungeonEntryVector canQueueFor; ///< Dungeons that this \ref PlayerInfo can queue for
         DungeonEntryVector wishToQueueFor; ///< Dungeons that this \ref PlayerInfo wishes to queue for
         DungeonEntryVector isQueuedFor; ///< Dungeons that this \ref PlayerInfo is currently queued for
