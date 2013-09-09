@@ -34,7 +34,22 @@ namespace Dungeon
             delete *it;
         }
     }
-
+    
+    uint32 Dungeon::GetMaxLevel() const
+    {
+        return m_dungeonEntry->maxlevel;
+    }
+    
+    uint32 Dungeon::GetMinLevel() const
+    {
+        return m_dungeonEntry->minlevel;
+    }
+    
+    Expansions Dungeon::GetRequiredExpansion() const
+    {
+        return Expansions(m_dungeonEntry->expansion);
+    }
+    
     Reward* Dungeon::CreateAndAddReward()
     {
         //(m_dungeonEntry->ID); for now we don't associate the reward back to a certain dungeon,
@@ -43,12 +58,12 @@ namespace Dungeon
         m_rewards.push_back(reward);
         return reward;
     }
-
+    
     RewardList& Dungeon::GetRewards()
     {
         return m_rewards;
     }
-
+    
     const RewardList& Dungeon::GetConstRewards() const
     {
         return m_rewards;

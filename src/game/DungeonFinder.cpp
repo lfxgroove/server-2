@@ -296,10 +296,14 @@ namespace Dungeon
         pPlayerInfo->SetPlayer(pPlayer);
         std::pair<PlayerInfoMap::iterator, bool> insertion;
         insertion = m_playerInfoMap.insert(std::make_pair(pPlayer, pPlayerInfo));
-        if (insertion.second)
+        if (insertion.second) //Everything went fine
+        {
+            PopulateLockedDungeons(pPlayerInfo);
             return pPlayerInfo;
+        }
         else
         {
+            //couldn't insert for some reason, perhaps check it out?
             delete pPlayerInfo;
             return NULL;
         }
@@ -314,7 +318,39 @@ namespace Dungeon
         if (it != m_playerInfoMap.end())
             return it->second;
         else
-            return NULL;
+            return CreatePlayerInfo(pPlayer);
+    }
+
+    void Finder::PopulateLockedDungeons(PlayerInfo* pPlayerInfo) const
+    {
+        DungeonLockSet lockedDungeons;
+        DungeonLock lock;
+        uint32 playerLevel = pPlayerInfo->GetPlayer()->getLevel();
+        uint8 playerExpansion = pPlayerInfo->GetPlayer()->GetSession()->Expansion();
+        
+        for (DungeonMap::const_iterator it = m_allDungeons.begin();
+             it != m_allDungeons.end();
+             ++it)
+        {
+            const Dungeon* dungeon = it->second;
+            MANGOS_ASSERT(dungeon); //is this not necessary?
+            lock.dungeon = dungeon;
+            
+            if (playerLevel < dungeon->GetMinLevel())
+                lock.lockReason = LOCKED_LEVEL_TOO_LOW;
+            if (playerLevel > dungeon->GetMaxLevel())
+                lock.lockReason = LOCKED_LEVEL_TOO_HIGH;
+            if (playerExpansion < dungeon->GetRequiredExpansion())
+                lock.lockReason = LOCKED_EXPANSION_TOO_LOW;
+            //From wowpedia.org/Dungeon_Finder:
+            //Most heroic dungeons require average ilvl of 180. The tier 9 and 10 five-man normal
+            //dungeons require ilvl 180 while heroics require ilvl 200 or 219
+            //TODO: Add code for ilvl checks!
+            
+            lockedDungeons.insert(lock);
+        }
+        
+        pPlayerInfo->SetLockedDungeons(lockedDungeons);
     }
     
     uint32 Finder::GetAvgWaitTime() const

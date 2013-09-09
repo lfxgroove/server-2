@@ -42,6 +42,10 @@ namespace Dungeon
         uint32 GetExpRewardConstant() const;
         uint32 GetExpRewardVariable() const;
         
+        uint32 GetMaxLevel() const;
+        uint32 GetMinLevel() const;
+        Expansions GetRequiredExpansion() const;
+        
         /** 
          * Gives you back a pointer to a \ref Reward that you can change the way you like and it will
          * be associated with this \ref Dungeon

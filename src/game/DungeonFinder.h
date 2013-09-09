@@ -114,9 +114,11 @@ namespace Dungeon
         
         Group* CreateGroup();
         void DisbandGroup(Group* pGroup);
-        
+
         void ReadyCheck(Group* pGroup);
 
+        void PopulateLockedDungeons(PlayerInfo* pInfo) const;
+        
         /** 
          * Checks that the given \ref Player only has queued as something that his class can queue
          * as, ie: a shaman can only heal or dps, not tank. This function makes sure that even if
@@ -141,8 +143,9 @@ namespace Dungeon
          * updated to keep track of what instances each player has locked for some reason. And also
          * saved back to db when it happens.
          * \todo Add the database things for this
+         * \todo This is probably already implemented for raids, merge with that instead!
          */
-        LockedDungeonMap m_lockedDungeons;
+        LockedDungeonMap m_lockedDungeons; //This will be removed
         PlayerInfoMap m_playerInfoMap;
         
         uint32 m_avgWaitTime; ///< Average wait time of the three, dps, tank and healer, in ms.

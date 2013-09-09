@@ -115,19 +115,37 @@ void WorldSession::HandleLfgGetPlayerInfo(WorldPacket& recv_data)
         packet << uint32(0); //unk?
         packet << uint32(1); //one of that item we will get
     }
-    
-    // packet << uint32(0);
-    packet << uint32(numDungeons);
-    int j = 300;
-    for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
+
+    Player* pPlayer = GetPlayer();
+    Dungeon::PlayerInfo* pInfo = sDungeonFinder.GetPlayerInfo(pPlayer);
+    if (!pInfo)
     {
-        const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
-        if (!dungeon)// || i % 2 == 0)
-            continue;
-        packet << uint32(dungeon->ID & 0xFFFFFF); //remove 0xFFFFFF?
-        packet << uint32(4); //lockReason
+        SendPacket(&packet);
+        return;
+    }
+    const DungeonLockSet& lockedDungeons = pInfo->GetLockedDungeons();
+    
+    packet << uint32(lockedDungeons.size());
+    for (DungeonLockSet::const_iterator it = lockedDungeons.begin();
+         it != lockedDungeons.end();
+         ++it)
+    {
+        packet << uint32(LFGDungeonEntry::IdFromEntry(it->dungeon->Entry()));
+        packet << uint32(it->lockReason);
     }
     SendPacket(&packet);
+    // packet << uint32(0);
+    // packet << uint32(numDungeons);
+    // int j = 300;
+    // for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
+    // {
+    //     const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
+    //     if (!dungeon)// || i % 2 == 0)
+    //         continue;
+    //     packet << uint32(dungeon->ID & 0xFFFFFF); //remove 0xFFFFFF?
+    //     packet << uint32(4); //lockReason
+    // }
+    // SendPacket(&packet);
 }
 
 void WorldSession::HandleLfgGetPartyInfo(WorldPacket& recv_data)
@@ -146,15 +164,16 @@ void WorldSession::HandleLfgGetPartyInfo(WorldPacket& recv_data)
     WorldPacket partyInfo(SMSG_LFG_PARTY_INFO);
     partyInfo << uint8(1); //one  player
     partyInfo << GetPlayer()->GetObjectGuid();
-    partyInfo << uint32(numDungeons); //number of locked dungeons
-    for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
-    {
-        const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
-        if (!dungeon)
-            continue;
-        partyInfo << uint32(dungeon->ID & 0xFFFFFF); //dungeonId
-        partyInfo << uint32(4); //lockReason
-    }
+    partyInfo << uint32(0);
+    // partyInfo << uint32(numDungeons); //number of locked dungeons
+    // for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
+    // {
+    //     const LFGDungeonEntry* dungeon = sLFGDungeonStore.LookupEntry(i);
+    //     if (!dungeon)
+    //         continue;
+    //     partyInfo << uint32(dungeon->ID & 0xFFFFFF); //dungeonId
+    //     partyInfo << uint32(4); //lockReason
+    // }
     SendPacket(&partyInfo);
     // WorldPacket packet(SMSG_LFG_PARTY_INFO, 13);
     // packet << uint8(0);
@@ -215,8 +234,8 @@ void WorldSession::HandleLfgJoinOpcode(WorldPacket& recv_data)
     // // pInfo->isQueuedFor = {};
     
     WorldPacket response(SMSG_LFG_JOIN_RESULT);
-    response << uint32(0x0); //players info coming
-    //One or more in group not meeting requirements = 0x6
+
+    response << uint32(0xF); //players info coming
     response << uint32(0);
     response << uint8(0); //no players currently
     SendPacket(&response);
@@ -228,7 +247,7 @@ void WorldSession::HandleLfgJoinOpcode(WorldPacket& recv_data)
     WorldPacket response4(SMSG_LFG_UPDATE_PLAYER);
     response4 << uint8(0); //statusCode
     response4 << uint8(1); //dataComing
-    response4 << uint8(1); //queued
+    response4 << uint8(0); //queued
     response4 << uint8(0); //joined
     response4 << uint8(0); //unk??
     response4 << uint8(1); //numInstancesComing
@@ -284,7 +303,7 @@ void WorldSession::HandleSearchLfgLeaveOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("CMSG_LFG_SEARCH_LEAVE");
     recv_data.hexlike();
-
+    
     recv_data >> Unused<uint32>();                          // join id?
 }
 
@@ -292,7 +311,7 @@ void WorldSession::HandleSetLfgCommentOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("CMSG_SET_LFG_COMMENT");
     recv_data.hexlike();
-
+    
     std::string comment;
     recv_data >> comment;
     DEBUG_LOG("LFG comment \"%s\"", comment.c_str());
@@ -303,7 +322,7 @@ void WorldSession::SendLfgSearchResults(LfgType type, uint32 entry)
     WorldPacket data(SMSG_LFG_SEARCH_RESULTS);
     data << uint32(type);                                   // type
     data << uint32(entry);                                  // entry from LFGDungeons.dbc
-
+    
     uint8 isGuidsPresent = 0;
     data << uint8(isGuidsPresent);
     if (isGuidsPresent)
