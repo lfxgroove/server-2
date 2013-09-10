@@ -130,7 +130,7 @@ void WorldSession::HandleLfgGetPlayerInfo(WorldPacket& recv_data)
          it != lockedDungeons.end();
          ++it)
     {
-        packet << uint32(LFGDungeonEntry::IdFromEntry(it->dungeon->Entry()));
+        packet << uint32(LFGDungeonEntry::IdFromEntry(it->dungeonEntry));
         packet << uint32(it->lockReason);
     }
     SendPacket(&packet);

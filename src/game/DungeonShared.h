@@ -157,12 +157,12 @@ namespace Dungeon
     /// Information about why a certain dungeon is locked.
     struct DungeonLock
     {
-        const Dungeon* dungeon;
+        DungeonEntry dungeonEntry;
         DungeonFinderLockReasons lockReason;
 
         bool operator<(const DungeonLock& rhs) const
         {
-            return lockReason < rhs.lockReason;
+            return dungeonEntry < rhs.dungeonEntry;
         }
     };
     

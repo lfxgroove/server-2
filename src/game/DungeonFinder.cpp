@@ -207,7 +207,7 @@ namespace Dungeon
             Compare() {};
             bool operator()(const DungeonEntry& lhs, const DungeonLock& rhs)
             {
-                return lhs < DungeonEntry(rhs.dungeon->Entry());
+                return lhs < rhs.dungeonEntry;
             }
         };
         //Would be nice with a std::set_intersection call here instead but we can't mix types with
@@ -217,17 +217,31 @@ namespace Dungeon
         DungeonEntryVector canQueue;
         Compare cmp;
 
-        for (DungeonEntryVector::const_iterator i = wish.begin();
-             i != wish.end();
-             ++i)
+        //2, 3, 4, 11
+        //1, 3, 5, 7, 10
+
+        DungeonEntryVector::const_iterator firstBegin = wish.begin();
+        DungeonEntryVector::const_iterator firstEnd = wish.end();
+        DungeonLockSet::const_iterator secondBegin = locked.begin();
+        DungeonLockSet::const_iterator secondEnd = locked.end();
+        while (firstBegin != firstEnd &&
+               secondBegin != secondEnd)
         {
-            for (DungeonLockSet::const_iterator j = locked.begin();
-                 j != locked.end();
-                 ++j)
+            if (cmp(*firstBegin, *secondBegin))
             {
-                if (cmp(*i, *j))
+                ++firstBegin;
+            }
+            else
+            {
+                if (!cmp(*firstBegin, *secondBegin))
                 {
-                    canQueue.push_back(*i);
+                    ++secondBegin;
+                }
+                else
+                {
+                    canQueue.push_back(*firstBegin);
+                    ++firstBegin;
+                    ++secondBegin;
                 }
             }
         }
@@ -370,7 +384,7 @@ namespace Dungeon
         {
             const Dungeon* dungeon = it->second;
             MANGOS_ASSERT(dungeon); //is this not necessary?
-            lock.dungeon = dungeon;
+            lock.dungeonEntry = dungeon->Entry();
             
             if (playerLevel < dungeon->GetMinLevel())
                 lock.lockReason = LOCKED_LEVEL_TOO_LOW;
