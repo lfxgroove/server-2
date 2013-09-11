@@ -78,7 +78,7 @@ namespace Dungeon
      * 0x11= ERR_LFG_CANT_USE_DUNGEONS - You cannot queue for a dungeon while using battleground or arenas
      * 0x12= ERR_LFG_ROLE_CHECK_FAILED - The role check has failed - duplicate?
      */
-    enum DungeonFinderJoinErrors
+    enum JoinErrors
     {
         JOIN_ERROR_ALL_OK = 0,
         JOIN_ERROR_LFG_ROLE_CHECK_FAILED = 1,
@@ -196,14 +196,14 @@ namespace Dungeon
         inline const DungeonEntryVector& GetWishQueueFor() const { return wishToQueueFor; };
         inline const DungeonEntryVector& GetIsQueuedFor() const { return isQueuedFor; };
         inline int GetLastUpdatedLevelForLock() const { return lastChangedLevel; };
-        inline DungeonFinderJoinErrors GetJoinError() const { return joinError; };
+        inline JoinErrors GetJoinError() const { return joinError; };
         
         inline void SetCanQueueFor(const DungeonEntryVector& canQueue)
         {
             canQueueFor = canQueue;
             std::sort(canQueueFor.begin(), canQueueFor.end());
         };
-        inline void SetJoinError(DungeonFinderJoinErrors error) { joinError = error; };
+        inline void SetJoinError(JoinErrors error) { joinError = error; };
         inline void SetLastUpdatedLevelForLock(int newLevel) { lastChangedLevel = newLevel; };
         inline void SetLockedDungeons(const DungeonLockSet& locked) { lockedDungeons = locked; };
         inline void SetRoles(DungeonFinderRoles newRoles) { roles = newRoles; };
@@ -226,7 +226,7 @@ namespace Dungeon
         uint32 myWaitTime; ///< Wait time that this \ref Player has waited in ms.
         bool acceptedProposal; ///< Whether or not we have accepted an ongoing proposal for a group
         uint32 lastChangedLevel; ///< Last level that lockedDungeons was changed
-        DungeonFinderJoinErrors joinError;
+        JoinErrors joinError;
         
         DungeonLockSet lockedDungeons; ///< Dungeons that this \ref PlayerInfo can't queue for
         //Turn these into sets aswell?
