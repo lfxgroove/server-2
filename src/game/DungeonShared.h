@@ -21,14 +21,14 @@ namespace Dungeon
      * word list. This is how it was in the client. So, if we're removed from the dungeon finder queue
      * the following update code is used:
      * \code{.cpp}
-     * DungeonFinderUpdateCodes::DUNGEON_FINDER_UPDATE_REMOVED_FROM_QUEUE
+     * UpdateCodes::DUNGEON_FINDER_UPDATE_REMOVED_FROM_QUEUE
      * \endcode
      * But if we're removed from the raid finders list of people it would instead be:
      * \code{.cpp}
-     * DungeonFinderUpdateCodes::DUNGEON_FINDER_UPDATE_REMOVED_FROM_LIST
+     * UpdateCodes::DUNGEON_FINDER_UPDATE_REMOVED_FROM_LIST
      * \endcode
      */
-    enum DungeonFinderUpdateCodes
+    enum UpdateCodes
     {
         // DUNGEON_FINDER_UPDATE_NOTHING = 0,
         DUNGEON_FINDER_UPDATE_REMOVED_FROM_QUEUE = 7,
