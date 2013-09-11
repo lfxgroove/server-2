@@ -49,6 +49,11 @@ namespace Dungeon
     {
         return Expansions(m_dungeonEntry->expansion);
     }
+
+    bool Dungeon::IsHeroic() const
+    {
+        //m_dungeonEntry->difficulty or type?
+    }
     
     Reward* Dungeon::CreateAndAddReward()
     {

@@ -40,7 +40,7 @@ namespace Dungeon
     public:
         GroupProposal();
         virtual ~GroupProposal();
-
+        
         static const uint8 MAX_TANKS = 1; ///< Max number of tanks in a group
         static const uint8 MAX_HEALERS = 1; ///< Max number of healers in a group
         static const uint8 MAX_DPS = 3; ///< Max number of damagers in a group
@@ -61,6 +61,7 @@ namespace Dungeon
          * @return true if we have 5 unique members.
          */
         bool CanCreateFullGroup() const;
+        uint8 NumPlayers() const;
         
         const inline PlayerInfoList& GetPossibleTanks() const { return m_tanks; };
         const inline PlayerInfoList& GetPossibleHealers() const { return m_healers; };
@@ -70,7 +71,7 @@ namespace Dungeon
         uint8 GetNeededTanks() const;
         uint8 GetNeededHealers() const;
         uint8 GetNeededDpsers() const;
-
+        
         inline uint8 GetAcceptedCount() { return m_acceptedCount; };
         inline void IncreaseAcceptedCount() { ++m_acceptedCount; };
         

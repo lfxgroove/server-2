@@ -110,11 +110,12 @@ namespace Dungeon
         PlayerInfo* pInfo = it->second;
         pInfo->SetAcceptedProposal(true);
         DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Player %u just accepted the proposal to join the"
-                         " proposal %x", pPlayer->GetObjectGuid(), pInfo->GetProposal());
+                         " proposal %x", pPlayer->GetObjectGuid(), pInfo->GetGroupProposal());
         
-        pInfo->GetProposal()->IncreaseAcceptedCount();
+        GroupProposal* pProp = pInfo->GetGroupProposal();
+        pProp->IncreaseAcceptedCount();
         //TODO: replace 5 with GetGroupSize() to accomodate for raids etc aswell
-        if (pInfo->GetProposal()->GetAcceptedCount() == 5)
+        if (pProp->GetAcceptedCount() == 5)
         {
             //actually create the group and remove the proposal
         }
@@ -134,7 +135,7 @@ namespace Dungeon
         //should this one be removed from queue in this case?
         pInfo->SetAcceptedProposal(false);
         DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Player %u just rejected the proposal to join the"
-                         " proposal %x", pPlayer->GetObjectGuid(), pInfo->GetProposal());
+                         " proposal %x", pPlayer->GetObjectGuid(), pInfo->GetGroupProposal());
 
         //More things should be done here, try to find a replacement from some of the other
         //current proposals and such.
@@ -200,40 +201,29 @@ namespace Dungeon
         }
     }
 
-    const DungeonEntryVector& FindDungeonsCanQueueFor(PlayerInfo* pInfo)
+    const DungeonEntryVector& Finder::FindDungeonsCanQueueFor(PlayerInfo* pInfo) const
     {
-        struct Compare
-        {
-            Compare() {};
-            bool operator()(const DungeonEntry& lhs, const DungeonLock& rhs)
-            {
-                return lhs < rhs.dungeonEntry;
-            }
-        };
         //Would be nice with a std::set_intersection call here instead but we can't mix types with
         //that sadly
         const DungeonEntryVector& wish = pInfo->GetWishQueueFor();
         const DungeonLockSet& locked = pInfo->GetLockedDungeons();
         DungeonEntryVector canQueue;
-        Compare cmp;
-
-        //2, 3, 4, 11
-        //1, 3, 5, 7, 10
-
+        
         DungeonEntryVector::const_iterator firstBegin = wish.begin();
         DungeonEntryVector::const_iterator firstEnd = wish.end();
         DungeonLockSet::const_iterator secondBegin = locked.begin();
         DungeonLockSet::const_iterator secondEnd = locked.end();
+        //Tries to do the same thing as an std::set_intersection() would do 
         while (firstBegin != firstEnd &&
                secondBegin != secondEnd)
         {
-            if (cmp(*firstBegin, *secondBegin))
+            if (*firstBegin < (*secondBegin).dungeonEntry)
             {
                 ++firstBegin;
             }
             else
             {
-                if (!cmp(*firstBegin, *secondBegin))
+                if (*firstBegin > (*secondBegin).dungeonEntry)
                 {
                     ++secondBegin;
                 }
@@ -245,17 +235,26 @@ namespace Dungeon
                 }
             }
         }
+        return canQueue;
     }
     
     bool Finder::AddToQueue(PlayerInfo* pInfo)
     {
         //Add checks for dps classes not being able to queue as healer etc.
         CheckAndChangeRoles(pInfo);
+        pInfo->SetJoinError(JOIN_ERROR_ALL_OK); //will be changed if needed
 
         //intersects the wishesToQueueFor and lockedDungeons
         pInfo->SetCanQueueFor(FindDungeonsCanQueueFor(pInfo));
+        if (pInfo->GetCanQueueFor().size() == 0)
+        {
+            //Don't know what else we should send here
+            pInfo->SetJoinError(JOIN_ERROR_INVALID_SLOT);
+            return false;
+        }
         
         m_queue.push_back(pInfo);
+        // FindFittingProposal(); instead of the loop?
         for (GroupProposalList::iterator it = m_groupProposals.begin();
              it != m_groupProposals.end();
              ++it)
@@ -300,7 +299,7 @@ namespace Dungeon
             WorldPacket searchUpdate(SMSG_LFG_UPDATE_SEARCH);
             searchUpdate << uint8(0); //no data for now, this should be changed
             session->SendPacket(&searchUpdate);
-
+            
             WorldPacket playerUpdate(SMSG_LFG_UPDATE_PLAYER);
             playerUpdate << uint8(0); //statusCode, TODO
             playerUpdate << uint8(1); //dataComing, TODO
@@ -371,12 +370,55 @@ namespace Dungeon
             return CreatePlayerInfo(pPlayer);
     }
 
+    void Finder::CalcAvgItemLevelAndLock(Player* pPlayer, const Dungeon* dungeon, DungeonLock& lock) const
+    {
+        //From wowpedia.org/Dungeon_Finder:
+        //Most heroic dungeons require average ilvl of 180. The tier 9 and 10 five-man normal
+        //dungeons require ilvl 180 while heroics require ilvl 200 or 219
+        //TODO: Add code for ilvl checks!
+        //TODO: Everything here is guessing, i don't know what items should be considered,
+        //whether or not one should consider empty slots as adding an itemlvl of 0 or not be
+        //counted at all.
+        uint32 equippedSlots = 0;
+        uint32 totalItemLevel = 0;
+        for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
+        {
+            if (slot == EQUIPMENT_SLOT_TABARD) //these doesn't count i guess?
+                continue;
+                
+            Item* pItem = pPlayer->GetItemByPos(slot);
+            const ItemPrototype* pItemProto = pItem->GetProto();
+            if (!pItem || !pItemProto)
+                continue;
+                
+            totalItemLevel += pItemProto->ItemLevel;
+            ++equippedSlots;
+        }
+            
+        uint32 avgItemLevel = totalItemLevel / equippedSlots; //should any rounding be applied?
+        //Is this proper?
+        if (dungeon->GetMinLevel() >= 80)
+        {
+            if (dungeon->IsHeroic())
+            {
+                if (avgItemLevel < 1337) //TODO: Proper value
+                    lock.lockReason = LOCKED_GEAR_TOO_LOW;
+            }
+            else
+            {
+                if (avgItemLevel < 1337) //TODO: Proper value
+                    lock.lockReason = LOCKED_GEAR_TOO_LOW;
+            }
+        }
+    }
+    
     void Finder::PopulateLockedDungeons(PlayerInfo* pPlayerInfo) const
     {
         DungeonLockSet lockedDungeons;
         DungeonLock lock;
-        uint32 playerLevel = pPlayerInfo->GetPlayer()->getLevel();
-        uint8 playerExpansion = pPlayerInfo->GetPlayer()->GetSession()->Expansion();
+        Player* pPlayer = pPlayerInfo->GetPlayer();
+        uint32 playerLevel = pPlayer->getLevel();
+        uint8 playerExpansion = pPlayer->GetSession()->Expansion();
         
         for (DungeonMap::const_iterator it = m_allDungeons.begin();
              it != m_allDungeons.end();
@@ -385,6 +427,7 @@ namespace Dungeon
             const Dungeon* dungeon = it->second;
             MANGOS_ASSERT(dungeon); //is this not necessary?
             lock.dungeonEntry = dungeon->Entry();
+            lock.lockReason = LOCKED_NO_LOCK;
             
             if (playerLevel < dungeon->GetMinLevel())
                 lock.lockReason = LOCKED_LEVEL_TOO_LOW;
@@ -392,12 +435,11 @@ namespace Dungeon
                 lock.lockReason = LOCKED_LEVEL_TOO_HIGH;
             if (playerExpansion < dungeon->GetRequiredExpansion())
                 lock.lockReason = LOCKED_EXPANSION_TOO_LOW;
-            //From wowpedia.org/Dungeon_Finder:
-            //Most heroic dungeons require average ilvl of 180. The tier 9 and 10 five-man normal
-            //dungeons require ilvl 180 while heroics require ilvl 200 or 219
-            //TODO: Add code for ilvl checks!
             
-            lockedDungeons.insert(lock);
+            CalcAvgItemLevelAndLock(pPlayer, dungeon, lock);
+            
+            if (lock.lockReason != LOCKED_NO_LOCK)
+                lockedDungeons.insert(lock);
         }
         
         pPlayerInfo->SetLockedDungeons(lockedDungeons);

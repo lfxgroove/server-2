@@ -26,6 +26,7 @@
 #include "DungeonFinder.h"
 #include "DungeonShared.h"
 #include "Dungeon.h"
+#include "DungeonGroupProposal.h"
 
 void WorldSession::HandleLfgProposalResponse(WorldPacket& recv_data)
 {
@@ -209,7 +210,7 @@ void WorldSession::HandleLfgJoinOpcode(WorldPacket& recv_data)
     recv_data >> comment;                                   // lfg comment
 
     DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Got this data: num %d, first dungeon id: %d comment %s",
-                     dungeonsCount, dungeons[0] & 0xFFFFFF, comment.c_str());
+                     dungeonsCount, LFGDungeonEntry::IdFromEntry(dungeons[0]), comment.c_str());
     
     Player* pPlayer = GetPlayer();
     if (!pPlayer)
@@ -228,46 +229,53 @@ void WorldSession::HandleLfgJoinOpcode(WorldPacket& recv_data)
     pInfo->SetComment(comment);
     pInfo->SetWishesToQueueFor(dungeons);
     sDungeonFinder.AddToQueue(pInfo);
-    //Here we should somehow ask sDungeonFinder to do something nice and then
-    //create some packets for us that we can send
-    //which will fill the following info at least: 
-    // pInfo->canQueueFor = ;
-    // // pInfo->isQueuedFor = {};
+    Dungeon::GroupProposal* pProp = pInfo->GetGroupProposal();
+    MANGOS_ASSERT(pProp); //At this stage Finder::AddToQueue should have set one
     
-    WorldPacket response(SMSG_LFG_JOIN_RESULT);
-
-    response << uint32(0xF); //players info coming
-    response << uint32(0);
-    response << uint8(0); //no players currently
-    SendPacket(&response);
+    WorldPacket joinResult(SMSG_LFG_JOIN_RESULT); //is it necessary to specify size?
+    joinResult << uint32(pInfo->GetJoinError());
+    joinResult << uint32(0); //what's this one?
+    joinResult << uint8(pProp->NumPlayers());
+    for (uint8 i = 0; i < pProp->NumPlayers(); ++i)
+    {
+        //some data should be sent here?
+    }
+    SendPacket(&joinResult);
     
-    WorldPacket response2(SMSG_LFG_UPDATE_SEARCH);
-    response2 << uint8(0);
-    SendPacket(&response2);
+    // WorldPacket response(SMSG_LFG_JOIN_RESULT);
     
-    WorldPacket response4(SMSG_LFG_UPDATE_PLAYER);
-    response4 << uint8(0); //statusCode
-    response4 << uint8(1); //dataComing
-    response4 << uint8(0); //queued
-    response4 << uint8(0); //joined
-    response4 << uint8(0); //unk??
-    response4 << uint8(1); //numInstancesComing
-    response4 << uint32(dungeons[0]); //dungeon entry for now, perhaps should be id?
-    response4 << "abcd"; //comment
-    SendPacket(&response4);
+    // response << uint32(0xF); //players info coming
+    // response << uint32(0);
+    // response << uint8(0); //no players currently
+    // SendPacket(&response);
     
-    WorldPacket response3(SMSG_LFG_QUEUE_STATUS);
-    response3 << uint32(dungeons[0]);
-    response3 << uint32(0); //myWait
-    response3 << uint32(0); //avg wait
-    response3 << uint32(0); //tankWait
-    response3 << uint32(0); //healerWait
-    response3 << uint32(0); //dpsWait
-    response3 << uint8(1); //tankNeeds
-    response3 << uint8(1); //healNeeds
-    response3 << uint8(2); //dpsNeeds
-    response3 << uint32(0); //queuedTime
-    SendPacket(&response3);
+    // WorldPacket response2(SMSG_LFG_UPDATE_SEARCH);
+    // response2 << uint8(0);
+    // SendPacket(&response2);
+    
+    // WorldPacket response4(SMSG_LFG_UPDATE_PLAYER);
+    // response4 << uint8(0); //statusCode
+    // response4 << uint8(1); //dataComing
+    // response4 << uint8(0); //queued
+    // response4 << uint8(0); //joined
+    // response4 << uint8(0); //unk??
+    // response4 << uint8(1); //numInstancesComing
+    // response4 << uint32(dungeons[0]); //dungeon entry for now, perhaps should be id?
+    // response4 << "abcd"; //comment
+    // SendPacket(&response4);
+    
+    // WorldPacket response3(SMSG_LFG_QUEUE_STATUS);
+    // response3 << uint32(dungeons[0]);
+    // response3 << uint32(0); //myWait
+    // response3 << uint32(0); //avg wait
+    // response3 << uint32(0); //tankWait
+    // response3 << uint32(0); //healerWait
+    // response3 << uint32(0); //dpsWait
+    // response3 << uint8(1); //tankNeeds
+    // response3 << uint8(1); //healNeeds
+    // response3 << uint8(2); //dpsNeeds
+    // response3 << uint32(0); //queuedTime
+    // SendPacket(&response3);
 
     
     // SendLfgJoinResult(ERR_LFG_OK);

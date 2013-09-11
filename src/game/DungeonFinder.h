@@ -48,16 +48,6 @@ namespace Dungeon
         virtual ~Finder();
 
         /** 
-         * Creates a struct with information needed when trying to find a group, if the
-         * sent in player is null nothing is created.
-         *
-         * Do note that the given pointer is managed by \ref Dungeon::Finder and hence doesn't
-         * need to be deleted by you.
-         * @param pPlayer the player you want to associate with the newly created info
-         * @return a pointer to the object if it was successfully created, null otherwise
-         */
-        PlayerInfo* CreatePlayerInfo(Player* pPlayer);
-        /** 
          * Get's the current \ref Dungeon::PlayerInfo for a \ref Player
          * @param pPlayer the \ref Player we want to find the association for
          * @return a pointer to the current \ref Dungeon::PlayerInfo associated to the \ref Player,
@@ -99,9 +89,20 @@ namespace Dungeon
          * the database and such.
          */
         void Init();
-
+        
         //Perhaps add a reloadDb()?
     private:
+        /** 
+         * Creates a struct with information needed when trying to find a group, if the
+         * sent in player is null nothing is created.
+         *
+         * Do note that the given pointer is managed by \ref Dungeon::Finder and hence doesn't
+         * need to be deleted by you.
+         * @param pPlayer the player you want to associate with the newly created info
+         * @return a pointer to the object if it was successfully created, null otherwise
+         */
+        PlayerInfo* CreatePlayerInfo(Player* pPlayer);
+        
         /** 
          * Sends update packets to the players in the given \ref Dungeon::GroupProposal, these
          * include: Opcodes::SMSG_LFG_UPDATE_SEARCH, \ref Opcodes::SMSG_LFG_UPDATE_PLAYER,
@@ -116,8 +117,33 @@ namespace Dungeon
         void DisbandGroup(Group* pGroup);
 
         void ReadyCheck(Group* pGroup);
-
+        
+        /** 
+         * Calculates a \ref Player s average item level and locks the given lock if it's too
+         * low or too high (not used yet) for the given \ref Dungeon.
+         * @param pPlayer the \ref Player you want to check the item level for
+         * @param dungeon the \ref Dungeon we want to check if we're locked against
+         * @param lock the \ref Dungeon::DungeonLock that should be locked with either:
+         * - \ref LockReasons::LOCKED_GEAR_TOO_LOW
+         * - \ref LockReasons::LOCKED_GEAR_TOO_HIGH
+         * \todo This needs some more info, we don't know what limits there were for the itemlevels
+         */
+        void CalcAvgItemLevelAndLock(Player* pPlayer, const Dungeon* dungeon, DungeonLock& lock) const;
+        /** 
+         * Populates the \ref Dungeon::PlayerInfo::GetCanQueueFor with the dungeons that are locked
+         * for the given \ref PlayerInfo
+         * @param pInfo the \ref PlayerInfo to use when populating the locked dungeons
+         * \see DungeonFinderLockReasons
+         */
         void PopulateLockedDungeons(PlayerInfo* pInfo) const;
+        /** 
+         * Intersects the \ref Dungeon::PlayerInfo::GetWishQueueFor and
+         * \ref Dungeon::PlayerInfo::GetLockedDungeons to create a new vector which holds all the
+         * instances that this \ref Dungeon::PlayerInfo can actually queue for
+         * @param pInfo the \ref Dungeon::PlayerInfo to use when intersecting
+         * @return a vector of the dungeons that this \ref Player can actually queue for
+         */
+        const DungeonEntryVector& FindDungeonsCanQueueFor(PlayerInfo* pInfo) const;
         
         /** 
          * Checks that the given \ref Player only has queued as something that his class can queue

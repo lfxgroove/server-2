@@ -54,6 +54,11 @@ namespace Dungeon
     {
         return m_players.size() == 5;
     }
+
+    uint8 GroupProposal::NumPlayers() const
+    {
+        return m_players.size();
+    }
     
     void GroupProposal::AddPlayer(PlayerInfo* pInfo) //add const to the pointer?
     {

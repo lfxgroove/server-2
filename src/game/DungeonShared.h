@@ -40,8 +40,9 @@ namespace Dungeon
      * \ref Opcodes::SMSG_LFG_PARTY_INFO and \ref Opcodes::SMSG_LFG_PLAYER_INFO.
      * \todo Document itemelevel and how we calculate the average, don't know that yet
      */
-    enum DungeonFinderLockReasons
+    enum LockReasons
     {
+        LOCKED_NO_LOCK = 0, ///< This isn't locked at all, only used internally atm
         LOCKED_EXPANSION_TOO_LOW = 1, ///< You don't have the right expansion for this instance
         LOCKED_LEVEL_TOO_LOW = 2, ///< Your level is too low to do this instance
         LOCKED_LEVEL_TOO_HIGH = 3, ///< Your level is too high to do this instance
@@ -158,7 +159,7 @@ namespace Dungeon
     struct DungeonLock
     {
         DungeonEntry dungeonEntry;
-        DungeonFinderLockReasons lockReason;
+        LockReasons lockReason;
 
         bool operator<(const DungeonLock& rhs) const
         {
@@ -186,7 +187,7 @@ namespace Dungeon
     {
         inline DungeonFinderRoles GetRoles() const { return roles; };
         inline Player* GetPlayer() const { return pPlayer; };
-        inline GroupProposal* GetProposal() const { return pGroupProposal; };
+        inline GroupProposal* GetGroupProposal() const { return pGroupProposal; };
         inline uint32 GetWaitTime() const { return myWaitTime; };
         inline const std::string& GetComment() const { return comment; };
         inline bool HasAcceptedProposal() const { return acceptedProposal; };
@@ -195,8 +196,14 @@ namespace Dungeon
         inline const DungeonEntryVector& GetWishQueueFor() const { return wishToQueueFor; };
         inline const DungeonEntryVector& GetIsQueuedFor() const { return isQueuedFor; };
         inline int GetLastUpdatedLevelForLock() const { return lastChangedLevel; };
+        inline DungeonFinderJoinErrors GetJoinError() const { return joinError; };
         
-        inline void SetCanQueueFor(const DungeonEntryVector& canQueue) { canQueueFor = canQueue; };
+        inline void SetCanQueueFor(const DungeonEntryVector& canQueue)
+        {
+            canQueueFor = canQueue;
+            std::sort(canQueueFor.begin(), canQueueFor.end());
+        };
+        inline void SetJoinError(DungeonFinderJoinErrors error) { joinError = error; };
         inline void SetLastUpdatedLevelForLock(int newLevel) { lastChangedLevel = newLevel; };
         inline void SetLockedDungeons(const DungeonLockSet& locked) { lockedDungeons = locked; };
         inline void SetRoles(DungeonFinderRoles newRoles) { roles = newRoles; };
@@ -219,6 +226,7 @@ namespace Dungeon
         uint32 myWaitTime; ///< Wait time that this \ref Player has waited in ms.
         bool acceptedProposal; ///< Whether or not we have accepted an ongoing proposal for a group
         uint32 lastChangedLevel; ///< Last level that lockedDungeons was changed
+        DungeonFinderJoinErrors joinError;
         
         DungeonLockSet lockedDungeons; ///< Dungeons that this \ref PlayerInfo can't queue for
         //Turn these into sets aswell?
