@@ -30,7 +30,7 @@ namespace MaNGOS
     {
     }
     
-    uint32 WeightedAverage::GetCurrentAverage() const
+    uint32 WeightedAverage::GetCurrAverage() const
     {
         uint32 avg = 0;
         uint32 weightNum = m_numQueue.size();
@@ -60,5 +60,10 @@ namespace MaNGOS
     void WeightedAverage::SetMax(uint32 newMax)
     {
         m_max = newMax;
+    }
+
+    bool WeightedAverage::IsEmpty() const
+    {
+        return m_numQueue.empty();
     }
 };

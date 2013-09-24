@@ -42,24 +42,35 @@ namespace Dungeon
      * somewhere in their name and give back a pointer to a object will generally take care of
      * deallocating the memory allocated, if not it will be noted in the functions documentation.
      *
+     * Wait times and their calculation
      * When a the first person starts queueing we start measuring the time it's taken from that person
      * queueing until a actual group forming (if the first person is involved in this group or not
      * doesn't really matter). That will become the first average we have, after that we measure the
-     * time it takes for another group to form and the new average is then:
-     * \verbatim
-     * (Time Group 1 Form + Time Group 2 Form) / 2
-     * \endverbatim
-     * And so forth as we progress creating new groups. The wait times for healer and tanks are pretty
-     * much the same, with the difference that we start the counter once the first tank (ever) starts
-     * searching, and as soon as a group forms we calculate the average the same way. The same thing
-     * goes for dps and healers.
+     * time it takes for another group to form and so forth. The measuring is done using the
+     * \ref MaNGOS::WeightedAverage class which helps in making the math hopefully a little more easy.
+     * 
+     * The wait times for healer and tanks are pretty much the same, with the difference that we start
+     * the counter once the first tank (ever) starts searching, and as soon as a group forms we
+     * calculate the average the same way. The same thing goes for dps and healers.
      */
     class Finder : public MaNGOS::Singleton<Finder>
     {
     public:
+        /**
+         * These indexes are used for the \ref Finder::m_avgWaitTimes
+         */
+        enum RoleIndex
+        {
+            WAIT_INDEX_AVERAGE = 0,
+            WAIT_INDEX_DPS     = 1,
+            WAIT_INDEX_TANK    = 2,
+            WAIT_INDEX_HEAL    = 3,
+            WAIT_INDEX_COUNT   = 4,
+        };
+        
         Finder();
         virtual ~Finder();
-
+        
         /** 
          * Get's the current \ref Dungeon::PlayerInfo for a \ref Player
          * @param pPlayer the \ref Player we want to find the association for
@@ -82,11 +93,10 @@ namespace Dungeon
         void StartVoteToBoot(PlayerInfo* pPlayer);
         void BootPlayer(PlayerInfo* pPlayer);
         
-        //All times in ms. ADD DOCUMENTATION
-        uint32 GetAvgWaitTime() const;
-        uint32 GetDpsWaitTime() const;
-        uint32 GetHealerWaitTime() const;
-        uint32 GetTankWaitTime() const;
+        uint32 GetAvgWaitTime() const; ///< Measured in ms, gives a weighted average from \ref WeightedAverage
+        uint32 GetDpsWaitTime() const; ///< Measured in ms, gives a weighted average from \ref WeightedAverage
+        uint32 GetHealerWaitTime() const; ///< Measured in ms, gives a weighted average from \ref WeightedAverage
+        uint32 GetTankWaitTime() const; ///< Measured in ms, gives a weighted average from \ref WeightedAverage
         
         DungeonList GetAvailableDungeonsForPlayer(Player* pPlayer) const;
         
@@ -111,7 +121,8 @@ namespace Dungeon
          * @param diff 
          * @param someoneFoundGroup 
          */
-        void UpdateFindTime(uint32 diff, bool someoneFoundGroup);
+        void UpdateWaitTimes(uint32 diff, bool someoneFoundGroup);
+        void StartWaitTimes(const PlayerInfo* pInfo); //Only used to initialize all the averages
         
         /** 
          * Creates a struct with information needed when trying to find a group, if the
@@ -195,25 +206,8 @@ namespace Dungeon
         LockedDungeonMap m_lockedDungeons; //This will be removed
         PlayerInfoMap m_playerInfoMap;
         
-        // uint32 m_avgWaitTime; ///< Average wait time of the three, dps, tank and healer, in ms.
-        // uint32 m_dpsWaitTime; ///< Average wait time for dpsers, in ms.
-        // uint32 m_tankWaitTime; ///< Average wait time for tanks, in ms.
-        // uint32 m_healerWaitTime; ///< Average wait time for healers, in ms.
-        // uint32 m_numUpdates; ///< How many updates we've ran, might overflow after sooooome time? :/
+        MaNGOS::WeightedAverage m_avgWaitTimes[WAIT_INDEX_COUNT]; ///< All these are measured in ms
         
-        MaNGOS::WeightedAverage m_avgWaitTime;
-        MaNGOS::WeightedAverage m_tankWaitTime;
-        MaNGOS::WeightedAverage m_dpsWaitTime;
-        MaNGOS::WeightedAverage m_healerWaitTime;
-        
-        /**
-         * The idea of grouped here means that we went from queueing to forming an actual group,
-         * measured in ms.
-         */
-        uint32 m_groupedSinceUpdate; 
-        uint32 m_groupedDpsSinceUpdate;
-        uint32 m_groupedHealersSinceUpdate;
-        uint32 m_groupedTanksSinceUpdate;
         time_t m_lastUpdate;
     };
 };

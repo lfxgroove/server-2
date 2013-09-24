@@ -25,12 +25,11 @@ namespace Dungeon
 
     Finder::Finder()
     {
-        m_avgWaitTime.SetMax(10);
-        m_tankWaitTime.SetMax(10);
-        m_dpsWaitTime.SetMax(10);
-        m_healerWaitTime.SetMax(10);
+        //Collect the average of the 10 last recorded proposals to form a real group
+        for (int i = 0; i < WAIT_INDEX_COUNT; ++i)
+            m_avgWaitTimes[i].SetMax(10);
     }
-
+    
     Finder::~Finder()
     {
         for (DungeonMap::iterator it = m_allDungeons.begin();
@@ -172,18 +171,19 @@ namespace Dungeon
                 SendUpdates(pProp);
             }
         }
-        UpdateFindTime(diff, someoneFoundGroup);
+        UpdateWaitTimes(diff, someoneFoundGroup);
     }
-
-    void Finder::UpdateFindTime(uint32 diff, bool someoneFoundGroup)
+    
+    void Finder::UpdateWaitTimes(uint32 diff, bool someoneFoundGroup)
     {
-        if (someoneFoundGroup)
+        for (int i = 0; i < WAIT_INDEX_COUNT; ++i)
         {
-            
-        }
-        else
-        {
-            
+            if (someoneFoundGroup)
+                //Create a "new" waiting time
+                m_avgWaitTimes[i].AddNewValue(diff);
+            else
+                //Increase the current waiting time
+                m_avgWaitTimes[i].IncreaseCurrBy(diff);
         }
     }
     
@@ -257,6 +257,29 @@ namespace Dungeon
         }
         return canQueue;
     }
+
+    void Finder::StartWaitTimes(const PlayerInfo* pInfo)
+    {
+        DungeonFinderRoles roles = pInfo->GetRoles();
+        if (m_avgWaitTimes[WAIT_INDEX_AVERAGE].IsEmpty())
+            //The first person ever just started waiting
+            m_avgWaitTimes[WAIT_INDEX_AVERAGE].AddNewValue(0);
+        
+        if (roles & ROLE_TANK &&
+            m_avgWaitTimes[WAIT_INDEX_TANK].IsEmpty())
+            //We just started waiting
+            m_avgWaitTimes[WAIT_INDEX_TANK].AddNewValue(0);
+        
+        if (roles & ROLE_DPS &&
+            m_avgWaitTimes[WAIT_INDEX_DPS].IsEmpty())
+            //We just started waiting
+            m_avgWaitTimes[WAIT_INDEX_DPS].AddNewValue(0);
+        
+        if (roles & ROLE_HEAL &&
+            m_avgWaitTimes[WAIT_INDEX_HEAL].IsEmpty())
+            //We just started waiting
+            m_avgWaitTimes[WAIT_INDEX_HEAL].AddNewValue(0);
+    }
     
     bool Finder::AddToQueue(PlayerInfo* pInfo)
     {
@@ -272,6 +295,8 @@ namespace Dungeon
             pInfo->SetJoinError(JOIN_ERROR_INVALID_SLOT);
             return false;
         }
+        
+        StartWaitTimes(pInfo);
         
         m_queue.push_back(pInfo);
         // FindFittingProposal(); instead of the loop?
@@ -475,21 +500,21 @@ namespace Dungeon
     
     uint32 Finder::GetAvgWaitTime() const
     {
-        return m_avgWaitTime;
+        return m_avgWaitTimes[WAIT_INDEX_AVERAGE].GetCurrAverage();
     }
     
     uint32 Finder::GetDpsWaitTime() const
     {
-        return m_dpsWaitTime;
+        return m_avgWaitTimes[WAIT_INDEX_DPS].GetCurrAverage();
     }
     
     uint32 Finder::GetTankWaitTime() const
     {
-        return m_tankWaitTime;
+        return m_avgWaitTimes[WAIT_INDEX_TANK].GetCurrAverage();
     }
 
     uint32 Finder::GetHealerWaitTime() const
     {
-        return m_healerWaitTime;
+        return m_avgWaitTimes[WAIT_INDEX_HEAL].GetCurrAverage();
     }
 }

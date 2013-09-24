@@ -41,11 +41,12 @@ namespace MaNGOS
         typedef std::list<uint32> UIntQueue; //Used as a queue
         WeightedAverage();
         virtual ~WeightedAverage();
-        
+
+        bool IsEmpty() const;
         /** 
          * @return The current weighted average of the values in here
          */
-        uint32 GetCurrentAverage() const;
+        uint32 GetCurrAverage() const;
         /** 
          * Increase the last added value by the given value, ie:
          * currVal += val
