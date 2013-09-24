@@ -44,6 +44,8 @@ set(LIBRARY_SRCS
     Utilities/LinkedReference/RefManager.h
     Utilities/TypeList.h
     Utilities/UnorderedMapSet.h
+    Utilities/WeightedAverage.cpp
+    Utilities/WeightedAverage.h
    )
 
 source_group("Other"
@@ -76,6 +78,8 @@ source_group("Dynamic"
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/src/shared
+  ${CMAKE_SOURCE_DIR}/src/bindings/universal
   ${ACE_INCLUDE_DIR}
 )
 

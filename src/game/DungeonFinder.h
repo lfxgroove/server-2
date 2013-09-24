@@ -20,6 +20,7 @@
 #define MANGOS_DUNGEON_FINDER_H
 
 #include "Policies/Singleton.h"
+#include "Utilities/WeightedAverage.h"
 #include "Database/DatabaseEnv.h"
 #include "DungeonShared.h"
 #include "Dungeon.h"
@@ -40,6 +41,18 @@ namespace Dungeon
      * The idea with this class and the ones related to it is that the methods that have a Create
      * somewhere in their name and give back a pointer to a object will generally take care of
      * deallocating the memory allocated, if not it will be noted in the functions documentation.
+     *
+     * When a the first person starts queueing we start measuring the time it's taken from that person
+     * queueing until a actual group forming (if the first person is involved in this group or not
+     * doesn't really matter). That will become the first average we have, after that we measure the
+     * time it takes for another group to form and the new average is then:
+     * \verbatim
+     * (Time Group 1 Form + Time Group 2 Form) / 2
+     * \endverbatim
+     * And so forth as we progress creating new groups. The wait times for healer and tanks are pretty
+     * much the same, with the difference that we start the counter once the first tank (ever) starts
+     * searching, and as soon as a group forms we calculate the average the same way. The same thing
+     * goes for dps and healers.
      */
     class Finder : public MaNGOS::Singleton<Finder>
     {
@@ -82,7 +95,7 @@ namespace Dungeon
          * send them updates about waiting time etc, if they've found a matching group and such.
          * @param diff the time difference since last call to this method in ms
          */
-        void Update(time_t diff);
+        void Update(uint32 diff);
         
         /** 
          * Initializes the \ref Finder for dungeons, fills the dungeon list with some data from
@@ -92,6 +105,14 @@ namespace Dungeon
         
         //Perhaps add a reloadDb()?
     private:
+        /** 
+         * DOCUMENT THIS
+         * 
+         * @param diff 
+         * @param someoneFoundGroup 
+         */
+        void UpdateFindTime(uint32 diff, bool someoneFoundGroup);
+        
         /** 
          * Creates a struct with information needed when trying to find a group, if the
          * sent in player is null nothing is created.
@@ -174,11 +195,17 @@ namespace Dungeon
         LockedDungeonMap m_lockedDungeons; //This will be removed
         PlayerInfoMap m_playerInfoMap;
         
-        uint32 m_avgWaitTime; ///< Average wait time of the three, dps, tank and healer, in ms.
-        uint32 m_dpsWaitTime; ///< Average wait time for dpsers, in ms.
-        uint32 m_tankWaitTime; ///< Average wait time for tanks, in ms.
-        uint32 m_healerWaitTime; ///< Average wait time for healers, in ms.
-
+        // uint32 m_avgWaitTime; ///< Average wait time of the three, dps, tank and healer, in ms.
+        // uint32 m_dpsWaitTime; ///< Average wait time for dpsers, in ms.
+        // uint32 m_tankWaitTime; ///< Average wait time for tanks, in ms.
+        // uint32 m_healerWaitTime; ///< Average wait time for healers, in ms.
+        // uint32 m_numUpdates; ///< How many updates we've ran, might overflow after sooooome time? :/
+        
+        MaNGOS::WeightedAverage m_avgWaitTime;
+        MaNGOS::WeightedAverage m_tankWaitTime;
+        MaNGOS::WeightedAverage m_dpsWaitTime;
+        MaNGOS::WeightedAverage m_healerWaitTime;
+        
         /**
          * The idea of grouped here means that we went from queueing to forming an actual group,
          * measured in ms.

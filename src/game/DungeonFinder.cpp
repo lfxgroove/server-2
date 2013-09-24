@@ -24,7 +24,12 @@ namespace Dungeon
 {
 
     Finder::Finder()
-    {}
+    {
+        m_avgWaitTime.SetMax(10);
+        m_tankWaitTime.SetMax(10);
+        m_dpsWaitTime.SetMax(10);
+        m_healerWaitTime.SetMax(10);
+    }
 
     Finder::~Finder()
     {
@@ -65,30 +70,30 @@ namespace Dungeon
             if (!dungeonDBC)
                 continue;
         
-            QueryResult* result = WorldDatabase.PQuery(
-                "SELECT item_id, how_many, unk "
-                "FROM dungeon_rewards "
-                "WHERE dungeon_id = %d",
-                dungeonDBC->ID);
+            // QueryResult* result = WorldDatabase.PQuery(
+            //     "SELECT item_id, how_many, unk "
+            //     "FROM dungeon_rewards "
+            //     "WHERE dungeon_id = %d",
+            //     dungeonDBC->ID);
         
-            if (!result)
-            {
-                sLog.outError("Couldn't find any rewards for dungeon %d", dungeonDBC->ID);
-                continue;
-            }
+            // if (!result)
+            // {
+            //     sLog.outError("Couldn't find any rewards for dungeon %d", dungeonDBC->ID);
+            //     continue;
+            // }
         
             Dungeon* dungeon = new Dungeon(dungeonDBC);
         
-            do
-            {
-                Field* fields = result->Fetch();
-                Reward* reward = dungeon->CreateAndAddReward();
-                reward->itemId = fields[0].GetUInt32();
-                reward->howMany = fields[1].GetUInt32();
-                reward->unk = fields[2].GetUInt32();
-            }
-            while(result->NextRow());
-            delete result; //Is this needed or not?
+            // do
+            // {
+            //     Field* fields = result->Fetch();
+            //     Reward* reward = dungeon->CreateAndAddReward();
+            //     reward->itemId = fields[0].GetUInt32();
+            //     reward->howMany = fields[1].GetUInt32();
+            //     reward->unk = fields[2].GetUInt32();
+            // }
+            // while(result->NextRow());
+            // delete result; //Is this needed or not?
             
             m_allDungeons.insert(std::make_pair(dungeonDBC->ID, dungeon));// push_back(dungeon);
         }
@@ -141,11 +146,12 @@ namespace Dungeon
         //current proposals and such.
     }
     
-    void Finder::Update(time_t diff)
+    void Finder::Update(uint32 diff)
     {
         //We should update average wait times here aswell.
         //Or rather when we form a full group that actually get's to do anything
-        
+
+        bool someoneFoundGroup = false;
         for (GroupProposalList::iterator it = m_groupProposals.begin();
              it != m_groupProposals.end();
              ++it)
@@ -158,6 +164,7 @@ namespace Dungeon
                 SendProposalToGroup(pProp);
                 m_groupProposals.erase(it); //Does this work or do i have to keep a iterator forwards aswell?
                 delete pProp;
+                someoneFoundGroup = true;
             }
             else
             {
@@ -165,8 +172,21 @@ namespace Dungeon
                 SendUpdates(pProp);
             }
         }
+        UpdateFindTime(diff, someoneFoundGroup);
     }
 
+    void Finder::UpdateFindTime(uint32 diff, bool someoneFoundGroup)
+    {
+        if (someoneFoundGroup)
+        {
+            
+        }
+        else
+        {
+            
+        }
+    }
+    
     void Finder::CheckAndChangeRoles(PlayerInfo* pInfo)
     {
         Player* pPlayer = pInfo->GetPlayer();
@@ -385,18 +405,22 @@ namespace Dungeon
         {
             if (slot == EQUIPMENT_SLOT_TABARD) //these doesn't count i guess?
                 continue;
-                
+            
             Item* pItem = pPlayer->GetItemByPos(slot);
+            if (!pItem)
+                continue;
             const ItemPrototype* pItemProto = pItem->GetProto();
-            if (!pItem || !pItemProto)
+            if (!pItemProto)
                 continue;
                 
             totalItemLevel += pItemProto->ItemLevel;
             ++equippedSlots;
         }
-            
-        uint32 avgItemLevel = totalItemLevel / equippedSlots; //should any rounding be applied?
-        //Is this proper?
+
+        //Any rounding?
+        uint32 avgItemLevel = uint32(float(totalItemLevel) / equippedSlots);
+        
+        //can only dungeons for level 80 be heroic or are there lower levels that are heroic?
         if (dungeon->GetMinLevel() >= 80)
         {
             if (dungeon->IsHeroic())
@@ -425,6 +449,7 @@ namespace Dungeon
              ++it)
         {
             const Dungeon* dungeon = it->second;
+            DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Dungeon %d", dungeon->Entry() & 0xFFFFFF);
             MANGOS_ASSERT(dungeon); //is this not necessary?
             lock.dungeonEntry = dungeon->Entry();
             lock.lockReason = LOCKED_NO_LOCK;
@@ -439,7 +464,10 @@ namespace Dungeon
             CalcAvgItemLevelAndLock(pPlayer, dungeon, lock);
             
             if (lock.lockReason != LOCKED_NO_LOCK)
+            {
+                DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Dungeon %d is locked" , dungeon->Entry() & 0xFFFFFF);
                 lockedDungeons.insert(lock);
+            }
         }
         
         pPlayerInfo->SetLockedDungeons(lockedDungeons);

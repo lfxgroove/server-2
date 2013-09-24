@@ -46,6 +46,7 @@ namespace Dungeon
         uint32 GetMinLevel() const;
         Expansions GetRequiredExpansion() const;
 
+        //this one doesn't work as it should
         bool IsHeroic() const;
         
         /** 

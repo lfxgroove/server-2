@@ -124,8 +124,12 @@ void WorldSession::HandleLfgGetPlayerInfo(WorldPacket& recv_data)
         SendPacket(&packet);
         return;
     }
+
+    //Might need a update of the locked ones here if the level of the char has changed
+    //
     const DungeonLockSet& lockedDungeons = pInfo->GetLockedDungeons();
     
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Sending %d locked dungeons", lockedDungeons.size());
     packet << uint32(lockedDungeons.size());
     for (DungeonLockSet::const_iterator it = lockedDungeons.begin();
          it != lockedDungeons.end();
@@ -151,6 +155,7 @@ void WorldSession::HandleLfgGetPlayerInfo(WorldPacket& recv_data)
 
 void WorldSession::HandleLfgGetPartyInfo(WorldPacket& recv_data)
 {
+    using namespace Dungeon;
     DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "CMSG_LFG_GET_PARTY_INFO RECEIVED");
     recv_data.hexlike();
     
@@ -165,7 +170,26 @@ void WorldSession::HandleLfgGetPartyInfo(WorldPacket& recv_data)
     WorldPacket partyInfo(SMSG_LFG_PARTY_INFO);
     partyInfo << uint8(1); //one  player
     partyInfo << GetPlayer()->GetObjectGuid();
-    partyInfo << uint32(0);
+    // partyInfo << uint32(0);
+
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "SHITFACKK");
+    Player* pPlayer = GetPlayer();
+    Dungeon::PlayerInfo* pInfo = sDungeonFinder.GetPlayerInfo(pPlayer);
+    if (!pInfo)
+    {
+        SendPacket(&partyInfo);
+        return;
+    }
+    const DungeonLockSet& lockedDungeons = pInfo->GetLockedDungeons();
+    DEBUG_FILTER_LOG(LOG_FILTER_DUNGEON, "Sending %d locked dungeons for party", lockedDungeons.size());
+    partyInfo << uint32(lockedDungeons.size());
+    for (DungeonLockSet::const_iterator it = lockedDungeons.begin();
+         it != lockedDungeons.end();
+         ++it)
+    {
+        partyInfo << uint32(LFGDungeonEntry::IdFromEntry(it->dungeonEntry));
+        partyInfo << uint32(it->lockReason);
+    }
     // partyInfo << uint32(numDungeons); //number of locked dungeons
     // for (int i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
     // {

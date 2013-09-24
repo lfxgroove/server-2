@@ -67,6 +67,7 @@
 #include "CharacterDatabaseCleaner.h"
 #include "CreatureLinkingMgr.h"
 #include "Calendar.h"
+#include "DungeonFinder.h"
 
 INSTANTIATE_SINGLETON_1(World);
 
@@ -1381,6 +1382,10 @@ void World::SetInitialWorldSettings()
     m_timers[WUPDATE_CORPSES].SetInterval(20 * MINUTE * IN_MILLISECONDS);
     m_timers[WUPDATE_DELETECHARS].SetInterval(DAY * IN_MILLISECONDS); // check for chars to delete every day
 
+    // for the dungeon finder
+    // Is this too slow in the perspective of the user?
+    m_timers[WUPDATE_DUNGEON_FINDER].SetInterval(30 * IN_MILLISECONDS); //is every 30 seconds good?
+    
     // for AhBot
     m_timers[WUPDATE_AHBOT].SetInterval(20 * IN_MILLISECONDS); // every 20 sec
 
@@ -1396,6 +1401,9 @@ void World::SetInitialWorldSettings()
     AIRegistry::Initialize();
     Player::InitVisibleBits();
 
+    //Init the dungeonfinder, might be moved later
+    sDungeonFinder.Init();
+    
     ///- Initialize MapManager
     sLog.outString("Starting Map System");
     sMapMgr.Initialize();
@@ -1517,6 +1525,12 @@ void World::Update(uint32 diff)
     if (m_gameTime > m_NextMonthlyQuestReset)
         ResetMonthlyQuests();
 
+    if (m_timers[WUPDATE_DUNGEON_FINDER].Passed())
+    {
+        m_timers[WUPDATE_DUNGEON_FINDER].Reset();
+        sDungeonFinder.Update(diff);
+    }
+    
     /// <ul><li> Handle auctions when the timer has passed
     if (m_timers[WUPDATE_AUCTIONS].Passed())
     {

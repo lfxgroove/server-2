@@ -100,6 +100,16 @@ namespace Dungeon
         JOIN_ERROR_NOT_IN_BG_ARENA = 17,
         JOIN_ERROR_ROLE_CHECK_FAILED = 18 //duplicate?
     };
+
+    /**
+     * Directly linked to \ref LFGDungeon::difficulty tells us whether or not a dungeon is
+     * heroic or not, a heroic dungeon is harder and has better rewards than a normal one.
+     */
+    enum Difficulty
+    {
+        DIFFICULTY_NORMAL = 0,
+        DIFFICULTY_HEROIC = 1,
+    };
     
     /**
      * These are the different roles you can apply for when joining the dungeon finder

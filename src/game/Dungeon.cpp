@@ -52,7 +52,8 @@ namespace Dungeon
 
     bool Dungeon::IsHeroic() const
     {
-        //m_dungeonEntry->difficulty or type?
+        //Is this correct?
+        return m_dungeonEntry->difficulty == DIFFICULTY_HEROIC;
     }
     
     Reward* Dungeon::CreateAndAddReward()
